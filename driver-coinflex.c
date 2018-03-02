@@ -505,7 +505,7 @@ int inno_preinit(uint32_t pll, uint32_t last_pll, int *rst)
                 finished = 0;
         }
         
-        usleep(50000);  // 50 us
+        usleep(50000);  // 50 ms
     }
 
     usleep(500000);     // 500 ms
@@ -581,7 +581,7 @@ static void recfg_vid()
         {
             for(j = CHIP_VID_DEF + 1; j <= opt_voltage1; j++)
             {
-                applog(LOG_ERR,"im_set_vid(chain=%d, vid=%d)\n", i, j);
+                applog(LOG_ERR,"inno_set_vid(chain=%d, vid=%d)\n", i, j);
                 im_set_vid(i, j);
                 usleep(500000);
             }
@@ -590,7 +590,7 @@ static void recfg_vid()
         {
             for(j = CHIP_VID_DEF - 1; j >= opt_voltage1; j--)
             {
-                applog(LOG_ERR,"im_set_vid(chain=%d, vid=%d)\n", i, j);
+                applog(LOG_ERR,"inno_set_vid(chain=%d, vid=%d)\n", i, j);
                 im_set_vid(i, j);
                 usleep(500000);
             }
@@ -726,7 +726,7 @@ static void coinflex_detect(bool __maybe_unused hotplug)
 //    int drv_hwver = misc_get_board_version();
 //    int drv_mtype = misc_get_miner_type();
     sys_platform_init(PLATFORM_ZYNQ_HUB_G19, -1, ASIC_CHAIN_NUM, ASIC_CHIP_NUM);
-//    sys_platform_debug_init(IM_LOG_ERR);
+    sys_platform_debug_init(IM_LOG_ERR);
 
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
     memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
