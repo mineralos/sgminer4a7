@@ -9,7 +9,7 @@ MAKE_JOBS=$2
 #MAKE_JOBS=8
 ROOTFS_DIR_G19=$3
 
-LDFLAGS="-L${ROOTFS_DIR}/lib -linno -lim_lib -lim_drv " \
+LDFLAGS="-L${ROOTFS_DIR}/lib -lim_lib -lim_drv " \
 CFLAGS="-I${ROOTFS_DIR}/include -Wall " \
 ./configure --prefix=${ROOTFS_DIR} \
 --enable-coinflex --without-curses --host=arm-xilinx-linux-gnueabi --build=x86_64-pc-linux-gnu #--target=arm
