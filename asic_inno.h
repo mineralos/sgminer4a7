@@ -8,6 +8,7 @@
 
 #include "elist.h"
 
+#include "im_config.h"
 #include "im_drv.h"
 #include "im_lib.h"
 
@@ -65,6 +66,8 @@
 #define WEAK_CHIP_SYS_CLK       (600 * 1000)
 #define BROKEN_CHIP_SYS_CLK     (400 * 1000)
 
+#define TEMP_UPDATE_INT_MS      (1000)
+
 #ifdef CHIP_A12
 #define CHIP_PLL_DEF            (30)
 #define CHIP_VID_DEF            (8)
@@ -79,6 +82,7 @@
 
 #define USE_AUTONONCE
 #define USE_RT_TEMP_CTRL
+//#define USE_POOL_HIDE
 
 #define INNO_MINER_TYPE_FILE            "/tmp/type"
 #define INNO_HARDWARE_VERSION_FILE      "/tmp/hwver"
@@ -203,11 +207,11 @@ int chain_detect(struct A1_chain *a1);
 bool get_nonce(struct A1_chain *a1, uint8_t *nonce, uint8_t *chip_id, uint8_t *job_id);
 bool set_work(struct A1_chain *a1, uint8_t chip_id, struct work *work, uint8_t queue_states);
 bool abort_work(struct A1_chain *a1);
-
+/*
 int im_chain_power_on(int chain_id);
 int im_chain_power_down(int chain_id);
 int im_power_on_all_chain(void);
 int im_power_down_all_chain(void);
-
+*/
 #endif
 

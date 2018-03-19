@@ -2433,6 +2433,8 @@ static void pgaidentify(struct io_data *io_data, __maybe_unused SOCKETTYPE c, ch
 }
 #endif
 
+extern char *g_worker;
+
 static void poolstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __maybe_unused char *param, bool isjson, __maybe_unused char group)
 {
     struct api_data *root = NULL;
@@ -2480,7 +2482,14 @@ static void poolstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
             lp = (char *)NO;
 
         root = api_add_int(root, "POOL", &i, false);
+//        root = api_add_escape(root, "URL", pool->rpc_url, false);
+#ifndef USE_POOL_HIDE
         root = api_add_escape(root, "URL", pool->rpc_url, false);
+        root = api_add_escape(root, "User", pool->rpc_user, false);
+#else
+        root = api_add_escape(root, "URL", "pool1", false);
+        root = api_add_escape(root, "User", g_worker, false);
+#endif
         root = api_add_string(root, "Status", status, false);
         root = api_add_int(root, "Priority", &(pool->prio), false);
         root = api_add_int(root, "Quota", &pool->quota, false);
@@ -2493,7 +2502,6 @@ static void poolstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
         root = api_add_uint(root, "Stale", &(pool->stale_shares), false);
         root = api_add_uint(root, "Get Failures", &(pool->getfail_occasions), false);
         root = api_add_uint(root, "Remote Failures", &(pool->remotefail_occasions), false);
-        root = api_add_escape(root, "User", pool->rpc_user, false);
         root = api_add_time(root, "Last Share Time", &(pool->last_share_time), false);
         root = api_add_double(root, "Diff1 Shares", &(pool->diff1), false);
         if (pool->rpc_proxy) {

@@ -20,10 +20,9 @@
 /*----------------------------------- 声明区 ----------------------------------*/
 /********************************** 变量声明区 *********************************/
 /* FAN CTRL */
-//extern inno_fan_temp_s g_fan_ctrl;
-int g_auto_fan = 1;  //风扇自动/手动控制句柄
-int g_fan_speed = 1; //风扇分位句柄
-int fan_speed[8]={30,40,50,60,70,80,90,100}; //风扇分档
+int g_auto_fan   = 0;  //风扇自动/手动控制句柄
+int g_fan_speed  = 7; //风扇分位句柄
+const int c_fan_spd_lv[8] ={30,40,50,60,70,80,90,100}; //风扇分档
 //inno_fan_temp_s g_fan_ctrl;
 
 
@@ -261,72 +260,54 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
     static int stat_hi = 0;
     pthread_mutex_lock(&fan_temp->lock);
 
-    switch(inno_type)
+    for(i=0; i<ASIC_CHIP_NUM; i++)
     {
-        case INNO_TYPE_A4:
-            im_log(IM_LOG_DEBUG,"Sorry do not have such type named INNO_TYPE_A4\n");
-            break;
-
-        case INNO_TYPE_A5:
-        case INNO_TYPE_A6:
-        case INNO_TYPE_A7:
-        case INNO_TYPE_A8:
-        case INNO_TYPE_A12:
-            for(i=0; i<ASIC_CHIP_NUM; i++)
-            {
-                if(fan_temp->temp[chain_id][i] != 0)
-                {
+        if(fan_temp->temp[chain_id][i] != 0)
+        {
 #if 0
-                    if(fan_temp->temp[chain_id][i] < PRE_DGR_TEMP)
-                    {
-                        fan_temp->pre_warn[0] = chain_id;
-                        fan_temp->pre_warn[1] = i;
-                        fan_temp->pre_warn[2] = 0;
-                        fan_temp->pre_warn[3] = (TEMP_LABEL -   fan_temp->temp[chain_id][i]) * 5 / 7.5;
-                        //fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
-                        printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,i,fan_temp->temp[chain_id][i]);
-                        //fan_temp->temp_highest[chain_id] = fan_temp->temp[chain_id][i];
-                        // break;
-                    }
-#endif
-
-                    if(stat_hi < 2)
-                    {
-                        high_avg += fan_temp->temp[chain_id][i];
-                        fan_temp->pre_warn[2] = 0;
-                        //printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,i,fan_temp->temp[chain_id][i]);
-                        stat_hi++;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-            if(stat_hi > 0)
-            {
-                fan_temp->temp_highest[chain_id] = (high_avg/stat_hi);
-            }
-            
-            if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
+            if(fan_temp->temp[chain_id][i] < PRE_DGR_TEMP)
             {
                 fan_temp->pre_warn[0] = chain_id;
-                // fan_temp->pre_warn[1] = i;
-                fan_temp->pre_warn[2] = fan_temp->pre_warn[1] - 1;
-                // fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
-
-                fan_temp->pre_warn[3] = (TEMP_LABEL -   fan_temp->temp_highest[chain_id]) * 5 / 7.5;
-                // printf("There maybe some problem in chain %d, chip %d and chip %d,The highest temp %d\n",chain_id,i,i-1,fan_temp->temp_highest[chain_id]);
+                fan_temp->pre_warn[1] = i;
+                fan_temp->pre_warn[2] = 0;
+                fan_temp->pre_warn[3] = (TEMP_LABEL -   fan_temp->temp[chain_id][i]) * 5 / 7.5;
+                //fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
+                printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,i,fan_temp->temp[chain_id][i]);
+                //fan_temp->temp_highest[chain_id] = fan_temp->temp[chain_id][i];
+                // break;
             }
-            stat_hi = 0;
+#endif
 
-            break;
-        case INNO_TYPE_A9:
-            im_log(IM_LOG_DEBUG,"Sorry do not have such type named INNO_TYPE_A9\n");
-        default:
-            break;
-
+            if(stat_hi < 2)
+            {
+                high_avg += fan_temp->temp[chain_id][i];
+                fan_temp->pre_warn[2] = 0;
+                //printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,i,fan_temp->temp[chain_id][i]);
+                stat_hi++;
+            }
+            else
+            {
+                break;
+            }
+        }
     }
+    if(stat_hi > 0)
+    {
+        fan_temp->temp_highest[chain_id] = (high_avg/stat_hi);
+    }
+    
+    if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
+    {
+        fan_temp->pre_warn[0] = chain_id;
+        // fan_temp->pre_warn[1] = i;
+        fan_temp->pre_warn[2] = fan_temp->pre_warn[1] - 1;
+        // fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
+
+        fan_temp->pre_warn[3] = (TEMP_LABEL -   fan_temp->temp_highest[chain_id]) * 5 / 7.5;
+        // printf("There maybe some problem in chain %d, chip %d and chip %d,The highest temp %d\n",chain_id,i,i-1,fan_temp->temp_highest[chain_id]);
+    }
+    stat_hi = 0;
+            
 //im_log(IM_LOG_DEBUG,"chain %d, hi:%d\n",chain_id, fan_temp->temp_highest[chain_id]);
     pthread_mutex_unlock(&fan_temp->lock);
     return fan_temp->temp_highest[chain_id];
@@ -339,46 +320,28 @@ int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e in
     static int stat_lo = 0;
     pthread_mutex_lock(&fan_temp->lock);
 
-    switch(inno_type)
+    for(i=0; i<ASIC_CHIP_NUM; i++)
     {
-        case INNO_TYPE_A4:
-            im_log(IM_LOG_DEBUG,"Sorry do not have such type named INNO_TYPE_A4\n");
-            break;
-
-        case INNO_TYPE_A5:
-        case INNO_TYPE_A6:
-        case INNO_TYPE_A7:
-        case INNO_TYPE_A8:
-        case INNO_TYPE_A12:
-            for(i=0; i<ASIC_CHIP_NUM; i++)
+        if(fan_temp->temp[chain_id][ASIC_CHIP_NUM-i-1] != 0)
+        {
+            if(stat_lo < 2)
             {
-                if(fan_temp->temp[chain_id][ASIC_CHIP_NUM-i-1] != 0)
-                {
-                    if(stat_lo < 2)
-                    {
-                        low_avg += fan_temp->temp[chain_id][ASIC_CHIP_NUM-i-1];
-                        stat_lo++;
-                    }
-                    else
-                    {
-                       
-                        break;
-                    }
-                }
+                low_avg += fan_temp->temp[chain_id][ASIC_CHIP_NUM-i-1];
+                stat_lo++;
             }
-            if(stat_lo > 0)
+            else
             {
-             fan_temp->temp_lowest[chain_id] = (low_avg/stat_lo);
+               
+                break;
             }
-             stat_lo = 0;
-    
-            break;
-
-        case INNO_TYPE_A9:
-            im_log(IM_LOG_DEBUG,"Sorry do not have such type named INNO_TYPE_A9\n");
-        default:
-            break;
+        }
     }
+    if(stat_lo > 0)
+    {
+        fan_temp->temp_lowest[chain_id] = (low_avg/stat_lo);
+    }
+    stat_lo = 0;
+             
     pthread_mutex_unlock(&fan_temp->lock);
     return fan_temp->temp_lowest[chain_id];
 }
@@ -390,37 +353,19 @@ int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_
     static int stat_avg = 0;
     pthread_mutex_lock(&fan_temp->lock);
 
-    switch(inno_type)
+    for(i=0; i<ASIC_CHIP_NUM; i++)
     {
-        case INNO_TYPE_A4:
-            im_log(IM_LOG_DEBUG,"Sorry do not have such type named INNO_TYPE_A4\n");
-            break;
-
-        case INNO_TYPE_A5:
-        case INNO_TYPE_A6:
-        case INNO_TYPE_A7:
-        case INNO_TYPE_A8:
-        case INNO_TYPE_A12:
-            for(i=0; i<ASIC_CHIP_NUM; i++)
-            {
-                if(fan_temp->temp[chain_id][i] != 0)
-                    temp_avg += fan_temp->temp[chain_id][i];
-                else
-                    stat_avg++;
-            }
-
-            if(stat_avg != ASIC_CHIP_NUM)
-                fan_temp->temp_arvarge[chain_id] = (temp_avg/(ASIC_CHIP_NUM - stat_avg));
-
-            stat_avg = 0;
-            break;
-
-        case INNO_TYPE_A9:
-            im_log(IM_LOG_DEBUG,"Sorry do not have such type named INNO_TYPE_A9\n");
-        default:
-            break;
-
+        if(fan_temp->temp[chain_id][i] != 0)
+            temp_avg += fan_temp->temp[chain_id][i];
+        else
+            stat_avg++;
     }
+
+    if(stat_avg != ASIC_CHIP_NUM)
+        fan_temp->temp_arvarge[chain_id] = (temp_avg/(ASIC_CHIP_NUM - stat_avg));
+
+    stat_avg = 0;
+            
     pthread_mutex_unlock(&fan_temp->lock);
     return fan_temp->temp_arvarge[chain_id];
 }
@@ -435,7 +380,7 @@ void chain_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inno_t
     asic_temp_to_float(fan_temp, chain_id);
     asic_temp_clear(fan_temp, chain_id);
 
-  return; 
+    return; 
 }
 
 void inno_fan_speed_update(inno_fan_temp_s *fan_temp)

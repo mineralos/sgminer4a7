@@ -14,7 +14,7 @@
 #include "asic_inno_cmd.h"
 #include "asic_inno_clock.h"
 #include "asic_inno_gpio.h"
-#include "inno_fan.h"
+//#include "inno_fan.h"
 
 
 //#define MAGIC_NUM  100 
@@ -646,12 +646,12 @@ void check_disabled_chips(struct A1_chain *a1)
         {
             applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
 
-            im_power_down_all_chain();
+            im_chain_power_down_all();
         }
     } else {
          applog(LOG_WARNING, "chain %d not insert,change all gpio to zero****", cid);
 
-         im_power_down_all_chain();
+         im_chain_power_down_all();
     }
 #endif             
 }
@@ -1079,7 +1079,7 @@ inno_type_e inno_get_miner_type(void)
 
     return miner_type;
 }
-
+/*
 int im_chain_power_on(int chain_id)
 {
     if(im_get_plug(chain_id) != 0)
@@ -1094,7 +1094,7 @@ int im_chain_power_on(int chain_id)
     sleep(1);
     im_set_start_en(chain_id, 1);
 
-    applog(LOG_INFO, "power on chain %d ", chain_id);
+    applog(LOG_INFO, "power on chain %d", chain_id);
 
     return 0;
 }
@@ -1107,6 +1107,8 @@ int im_chain_power_down(int chain_id)
     im_set_reset(chain_id, 0);
     im_set_start_en(chain_id, 0);
     im_set_led(chain_id, 1);
+
+    applog(LOG_INFO, "power down chain %d", chain_id);
 
     return 0;
 }
@@ -1147,8 +1149,10 @@ int im_power_on_all_chain(void)
 
         im_set_start_en(i, 1);
 
-        applog(LOG_INFO, "power on chain %d ", i);
+        applog(LOG_INFO, "power on chain %d", i);
     }
+
+    return 0;
 }
 
 int im_power_down_all_chain(void)
@@ -1167,6 +1171,10 @@ int im_power_down_all_chain(void)
         im_set_reset(i, 0);
         im_set_start_en(i, 0);
         im_set_led(i, 1);
-    }
-}
 
+        applog(LOG_INFO, "power down chain %d", i);
+    }
+
+    return 0;
+}
+*/
