@@ -26,8 +26,8 @@ extern char *curly;
 #include "logging.h"
 #include "util.h"
 #include <sys/types.h>
-//#include "inno_fan.h"
 #include "inno_log.h"
+#include "im_drv.h"
 
 #ifndef WIN32
 # include <sys/socket.h>
@@ -118,6 +118,7 @@ static inline int fsync (int fd)
 #endif
 
 #if defined(USE_COINFLEX)
+#include "im_fan.h"
 extern char *opt_bitmine_a1_options;
 extern uint32_t opt_A1Pll1;
 extern uint32_t opt_A1Pll2;
@@ -138,12 +139,9 @@ extern int opt_voltage6;
 extern int opt_voltage7;
 extern int opt_voltage8;
 
-extern int g_auto_fan;
-extern int g_fan_speed;
 extern int g_reset_delay;
 extern int g_miner_state;
-extern int fan_level[8];
-//extern inno_fan_temp_s g_fan_ctrl;
+extern im_fan_temp_s *fan_temp_ctrl;
 
 
 #endif

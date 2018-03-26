@@ -2433,8 +2433,6 @@ static void pgaidentify(struct io_data *io_data, __maybe_unused SOCKETTYPE c, ch
 }
 #endif
 
-extern char *g_worker;
-
 static void poolstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __maybe_unused char *param, bool isjson, __maybe_unused char group)
 {
     struct api_data *root = NULL;
@@ -4067,6 +4065,7 @@ static void lcddata(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __mayb
 
 static void fanmode(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *param, bool isjson, char group)
 {
+#if 0
     if (param == NULL || *param == '\0') {
         message(io_data, MSG_MISPDP, 0, NULL, isjson);
         return;
@@ -4074,11 +4073,12 @@ static void fanmode(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *
 
    // printf("%c,0x%x,%d\n",*param, *param,atoi(param));
     g_auto_fan = atoi(param);
-
+#endif
 }
 
 static void fanspd(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *param, bool isjson, char group)
 {
+#if 0
  int fan_speed = 0;
  
     if (param == NULL || *param == '\0') {
@@ -4091,6 +4091,7 @@ static void fanspd(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *p
 //  printf("%c,0x%x,%d\n",*param, *param,atoi(param));
     if((fan_speed >= 0)&&(fan_speed < 4))
       g_fan_speed = fan_speed;
+    #endif
 }
 
 static void powerdown(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *param, bool isjson, char group)

@@ -384,27 +384,22 @@ int A1_ConfigA1PLLClock(int optPll)
     int i;
     int pllIdx;
 
-    if(optPll > 0)
-    {
-        pllIdx = 0;
-        if(unlikely(optPll <= PLL_Clk_12Mhz[0].speedMHz))
-        {
-            pllIdx = 0; //found
-        }
-        else
-        {
+    if(optPll>0){
+        pllIdx=0;
+        if(optPll<=PLL_Clk_12Mhz[0].speedMHz) 
+		{
+            pllIdx=0; //found
+        }else{
             for(i = 1; i < PLL_LV_NUM; i++)
-            {
-                if((optPll < PLL_Clk_12Mhz[i].speedMHz)
-                    && (optPll >= PLL_Clk_12Mhz[i - 1].speedMHz))
-                {
-                    pllIdx = i - 1; // found
+                if((optPll<PLL_Clk_12Mhz[i].speedMHz)&&(optPll>=PLL_Clk_12Mhz[i-1].speedMHz))
+				{
+                    pllIdx=i-1; //found
                     break;
                 }
             }
-        }
-        applog(LOG_NOTICE, "PLL[%d] = %d", pllIdx, optPll);
-        applog(LOG_NOTICE, "A1 PLL Clock = %dMHz", PLL_Clk_12Mhz[pllIdx].speedMHz);
+        
+        applog(LOG_NOTICE, "A1 = %d,%d", optPll, pllIdx);
+        applog(LOG_NOTICE, "A1 PLL Clock = %dMHz",PLL_Clk_12Mhz[pllIdx].speedMHz);
     }
 
     return pllIdx;
@@ -431,12 +426,6 @@ void A1_SetA1PLLClock(struct A1_chain *a1,int pllClkIdx)
     memcpy(chip->reg + 2, (uint8_t*)&regPll + 1 ,1);
     memcpy(chip->reg + 3, (uint8_t*)&regPll + 0 ,1);
     memcpy(chip->reg + 4, fix_val , 8);
-
-    //chip->reg[6] = (asic_vol_set&0xff00)>>8;
-    //chip->reg[7] = asic_vol_set&0x00ff;
-    //chip->reg[8] = pllClkIdx;
-    //chip->reg[9] = pllClkIdx;
-    //applog(LOG_INFO,"pllClkIdx is %d %d", chip->reg[8],chip->reg[9]); 
 
     im_cmd_write_register(a1->chain_id, ADDR_BROADCAST, chip->reg, REG_LENGTH);
     usleep(100000);

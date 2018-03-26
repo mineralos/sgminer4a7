@@ -26,7 +26,7 @@ const unsigned short wCRCTalbeAbs[] =
     0x5000, 0x9C01, 0x8801, 0x4400,
 };
 
-unsigned short CRC16_2(unsigned char* pchMsg, unsigned short wDataLen)
+inline unsigned short CRC16_2(unsigned char* pchMsg, unsigned short wDataLen)
 {
     volatile unsigned short wCRC = 0xFFFF;
     unsigned short i;

@@ -19,7 +19,7 @@
                            //     0:  Internal  SPI  frequency  is System  clock  frequency  divide 128
 
 
-#ifdef CHIP_A12
+#if defined(CHIP_A11) || defined(CHIP_A12)   
 #define A4_PLL(prediv,fbdiv,postdiv) ((prediv<<(89-64))|fbdiv<<(80-64)|0b010<<(77-64)|postdiv<<(78-64)|0x02)
 #else
 #define A4_PLL(prediv,fbdiv,postdiv) ((prediv<<(89-64))|fbdiv<<(80-64)|0b010<<(77-64)|postdiv<<(70-64))

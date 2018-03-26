@@ -8,10 +8,7 @@
 
 #include "elist.h"
 
-#include "im_config.h"
 #include "im_drv.h"
-#include "im_lib.h"
-
 
 #define CHIP_A12
 
@@ -21,27 +18,12 @@
 //#define SIA_DEBUG_MODE
 #define NO_FAN_CTRL
 
-#ifdef SIA_DEBUG_MODE
-#define SIA_DBG_PREVHASH        "0000000000000030e5763f4455188db331d0e0ac348118e00bf3ac6315610e6a"
-#define SIA_DBG_NONCE           "da9032cfff010000"
-#define SIA_DBG_NTIME           "a8f1d45900000000"
-#define SIA_DBG_MERKLE          "32a8dfd9f6bddc23c04c6e7be3b8bcd7e77be86a7f042d55bdfc51468673a4dd"
-#define SIA_DBG_HASH            "00000000028eef64fd8c11b0ebdc427bea4f721c32c35b236cc46499ea01a438"
-#endif
-
 #ifdef CHIP_A12
 #define ASIC_CHAIN_NUM          (3)
 #define ASIC_CHIP_NUM           (45)    // 45
 #define ASIC_CORE_NUM           (63)    // 63
 #endif
 
-#ifdef CHIP_A6
-#define JOB_LENGTH              (92)
-#endif
-
-#ifdef CHIP_A7
-#define JOB_LENGTH              (98)
-#endif
 
 #ifdef CHIP_A12
 #define JOB_LENGTH              (120)
@@ -65,8 +47,7 @@
 #define BROKEN_CHIP_THRESHOLD   (1)
 #define WEAK_CHIP_SYS_CLK       (600 * 1000)
 #define BROKEN_CHIP_SYS_CLK     (400 * 1000)
-
-#define TEMP_UPDATE_INT_MS      (1000)
+#define TEMP_UPDATE_INT_MS  5000
 
 #ifdef CHIP_A12
 #define CHIP_PLL_DEF            (30)
@@ -81,8 +62,6 @@
 #endif
 
 #define USE_AUTONONCE
-#define USE_RT_TEMP_CTRL
-//#define USE_POOL_HIDE
 
 #define INNO_MINER_TYPE_FILE            "/tmp/type"
 #define INNO_HARDWARE_VERSION_FILE      "/tmp/hwver"
@@ -92,19 +71,6 @@ typedef enum{
     HARDWARE_VERSION_G9 = 0x09,
     HARDWARE_VERSION_G19 = 0x13,
 } hardware_version_e;
-
-/*
-typedef enum{
-    MINER_TYPE_NONE = 0x00,
-    MINER_TYPE_T0,
-    MINER_TYPE_T1,
-    MINER_TYPE_T2,
-    MINER_TYPE_T3,
-    MINER_TYPE_T4,
-    MINER_TYPE_T5,
-    MINER_TYPE_SUM,
-}miner_type_e;
-*/
     
 typedef enum{
     INNO_TYPE_NONE = 0x00,
@@ -114,6 +80,7 @@ typedef enum{
     INNO_TYPE_A7,
     INNO_TYPE_A8,
     INNO_TYPE_A9,
+	INNO_TYPE_A11,
     INNO_TYPE_A12,
 }inno_type_e;
 
@@ -201,17 +168,12 @@ bool is_chip_disabled(struct A1_chain *a1, uint8_t chip_id);
 void disable_chip(struct A1_chain *a1, uint8_t chip_id);
 void check_disabled_chips(struct A1_chain *a1);
 bool check_chip(struct A1_chain *a1, int cid);
-bool set_chain_pll(uint8_t chain_id, int pll_lv);
+int prechain_detect(struct A1_chain *a1, int idxpll,int last_pll);
 int chain_detect(struct A1_chain *a1);
 
 bool get_nonce(struct A1_chain *a1, uint8_t *nonce, uint8_t *chip_id, uint8_t *job_id);
 bool set_work(struct A1_chain *a1, uint8_t chip_id, struct work *work, uint8_t queue_states);
 bool abort_work(struct A1_chain *a1);
-/*
-int im_chain_power_on(int chain_id);
-int im_chain_power_down(int chain_id);
-int im_power_on_all_chain(void);
-int im_power_down_all_chain(void);
-*/
+
 #endif
 

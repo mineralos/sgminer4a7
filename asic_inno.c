@@ -19,45 +19,6 @@
 
 //#define MAGIC_NUM  100 
 #define MUL_COEF 1.23
-extern struct A1_chain *chain[ASIC_CHAIN_NUM];
-
-
-static const float inno_vsadc_table[] = {   
-    0.54691,
-    0.54382,
-    0.54073,
-    0.53764,
-    0.53455,
-    0.53145,
-    0.52827,
-    0.52518,
-    0.52200,
-    0.51882,
-    0.51573,
-    0.51264,
-    0.50945,
-    0.50636,
-    0.50318,
-    0.50009,
-    0.49691,
-    0.49373,
-    0.49064,
-    0.48755,
-    0.48445,
-    0.48118,
-    0.47818,
-    0.47500,
-    0.47191,
-    0.46891,
-    0.46582,
-    0.46264,
-    0.45964,
-    0.45645,
-    0.45345,
-    0.45027,
-};
-
-
 
 extern inno_reg_ctrl_t s_reg_ctrl;
 
@@ -431,7 +392,7 @@ static const uint8_t default_reg[PLL_LV_NUM][REG_LENGTH] =
 
 #define JOB_FLIP_BYTES
 
-void create_job(uint8_t *job, uint8_t chain_id, uint8_t chip_id, uint8_t job_id, struct work *work)
+void create_job(uint8_t *job, uint8_t chip_id, uint8_t job_id, struct work *work)
 {
     int i;
     //bool ret;
@@ -439,49 +400,6 @@ void create_job(uint8_t *job, uint8_t chain_id, uint8_t chip_id, uint8_t job_id,
     uint16_t crc;
     uint8_t tmp_buf[JOB_LENGTH];
 
-    work->data[39] = chain_id;
-    work->data[38] = chip_id;
-
-#if 0
-    uint8_t jobdata[JOB_LENGTH] = {
-        /* command */
-        0x00, 0x00,
-        /* prev_hash */
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30,
-        0xE5, 0x76, 0x3F, 0x44, 0x55, 0x18, 0x8D, 0xB3,
-        0x31, 0xD0, 0xE0, 0xAC, 0x34, 0x81, 0x18, 0xE0,
-        0x0B, 0xF3, 0xAC, 0x63, 0x15, 0x61, 0x0E, 0x6A,
-        /* start nonce */
-//        0xda, 0x90, 0x32, 0xcf, 0xff, 0x01, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0xff, 0x01, 0x00, 0x00,
-        /* ntime */
-        0xa8, 0xf1, 0xd4, 0x59, 0x00, 0x00, 0x00, 0x00,
-        /* merkel */
-        0x32, 0xa8, 0xdf, 0xd9, 0xf6, 0xbd, 0xdc, 0x23,
-        0xc0, 0x4c, 0x6e, 0x7b, 0xe3, 0xb8, 0xbc, 0xd7,
-        0xe7, 0x7b, 0xe8, 0x6a, 0x7f, 0x04, 0x2d, 0x55, 
-        0xbd, 0xfc, 0x51, 0x46, 0x86, 0x73, 0xa4, 0xdd,
-        /* difficulty */
-        0x00, 0x00, 0x00, 0x00, 0x02, 0x8e, 0xef, 0x64,
-        0xfd, 0x8c, 0x11, 0xb0, 0xeb, 0xdc, 0x42, 0x7b,
-        0xea, 0x4f, 0x72, 0x1c, 0x32, 0xc3, 0x5b, 0x23,
-        0x6c, 0xc4, 0x64, 0x99, 0xea, 0x01, 0xa4, 0x38,
-//        0x00, 0x00, 0x00, 0x00, 0x01, 0xff, 0xff, 0xff,
-//        0xff, 0xff, 0xfe, 0x00, 0x00, 0x00, 0x00, 0x00,
-//        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-//        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        /* end nonce */
-        0xff, 0xff, 0xff, 0xff,
-        /* crc data */
-        0x00, 0x00
-    };
-
-    // cmd
-    job_id = 1;
-    jobdata[0] = ((job_id & 0x0f) << 4) | CMD_WRITE_JOB;
-    jobdata[1] = chip_id;
-
-#else
     uint8_t jobdata[JOB_LENGTH] = { 0 };
 
     // cmd
@@ -511,15 +429,7 @@ void create_job(uint8_t *job, uint8_t chain_id, uint8_t chip_id, uint8_t job_id,
         jobdata[2 + i * 4 + 3] = work->data[4 * i + 0];
     }
     // target
-#if 0
-    for(i = 0; i < (TARGET_LEN >> 2); i++)
-    {
-        jobdata[(BLOCK_HEADER_LEN + 2) + (i * 4 + 0)] = work->target[4 * i + 3];
-        jobdata[(BLOCK_HEADER_LEN + 2) + (i * 4 + 1)] = work->target[4 * i + 2];
-        jobdata[(BLOCK_HEADER_LEN + 2) + (i * 4 + 2)] = work->target[4 * i + 1];
-        jobdata[(BLOCK_HEADER_LEN + 2) + (i * 4 + 3)] = work->target[4 * i + 0];
-    }
-#endif
+
     for(i = 0; i < TARGET_LEN; i++)
     {
         jobdata[(BLOCK_HEADER_LEN + 2) + i] = work->target[TARGET_LEN - i - 1];
@@ -532,7 +442,6 @@ void create_job(uint8_t *job, uint8_t chain_id, uint8_t chip_id, uint8_t job_id,
     jobdata[(BLOCK_HEADER_LEN + TARGET_LEN + 2) + 3] = 0xff;
 #endif
 
-#endif
 
     // crc
 //    memset(tmp_buf, 0, sizeof(tmp_buf));
@@ -664,11 +573,6 @@ bool set_work(struct A1_chain *a1, uint8_t chip_id, struct work *work, uint8_t q
     struct A1_chip *chip = &a1->chips[chip_id - 1];
     bool retval = false;
 
-#ifdef SIA_DEBUG_MODE
-    if (chip_id > 1)
-        return false;
-#endif
-
     int job_id = chip->last_queued_id + 1;
 
     if (job_id == (queue_states & 0x0f) || job_id == (queue_states >> 4))
@@ -684,13 +588,12 @@ bool set_work(struct A1_chain *a1, uint8_t chip_id, struct work *work, uint8_t q
     }
     
     uint8_t jobdata[JOB_LENGTH] = { 0 };
-    create_job(jobdata, a1->chain_id, chip_id, job_id, work);
+    create_job(jobdata, chip_id, job_id, work);
     if (!im_cmd_write_job(a1->chain_id, chip_id, jobdata, JOB_LENGTH)) 
     {
         /* give back work */
         work_completed(a1->cgpu, work);
         applog(LOG_ERR, "%d: failed to set work for chip %d.%d", cid, chip_id, job_id);
-        disable_chip(a1, chip_id);
     } 
     else 
     {
@@ -708,11 +611,7 @@ bool get_nonce(struct A1_chain *a1, uint8_t *nonce, uint8_t *chip_id, uint8_t *j
     uint8_t buffer[NONCE_LEN + 2];
     memset(buffer, 0, sizeof(buffer));
 
-#ifdef USE_AUTONONCE
     if(im_cmd_read_nonce(a1->chain_id, buffer, NONCE_LEN))
-#else
-    if(im_cmd_read_result(a1->chain_id, ADDR_BROADCAST, buffer, NONCE_LEN))
-#endif
     {
         *job_id = buffer[0] >> 4;
         *chip_id = buffer[1];
@@ -780,25 +679,38 @@ bool check_chip(struct A1_chain *a1, int cid)
     return true;
 }
 
-bool set_chain_pll(uint8_t chain_id, int pll_lv)
+int prechain_detect(struct A1_chain *a1, int idxpll, int lastidx)
 {
-    int timeout = 5;
-    uint8_t reg[REG_LENGTH] = { 0 };
-
-    memcpy(reg, default_reg[pll_lv], REG_LENGTH);
-
-    while(!im_cmd_write_register(chain_id, ADDR_BROADCAST, reg, REG_LENGTH))
+    //uint8_t buffer[64];
+    int cid = a1->chain_id;
+    uint8_t temp_reg[REG_LENGTH];
+    int i,nCount = 0;
+  
+    //usleep(500000);
+    
+    for(i=lastidx; i<idxpll+1; i++)
     {
-        usleep(50000);
-        timeout--;
-        if(timeout == 0) 
-        {
-            applog(LOG_ERR, "chain %d set PLL Lv. %d failed", chain_id, pll_lv);
-            return false;
-        }
-    }
+        nCount = 0;
+        memcpy(temp_reg, default_reg[i], REG_LENGTH);
+        
+         while(!im_cmd_write_register(a1->chain_id, ADDR_BROADCAST, temp_reg, REG_LENGTH))
+         {
+               usleep(200000);
+               nCount++;
+               if(nCount > 5) 
+               {
+                  applog(LOG_ERR, "set default PLL fail");
+                  return -1;
+                }
+          }
+       
+           usleep(20000);
+      }
+        
+        applog(LOG_WARNING, "chain %d set PLL Lv.%d success", cid, i);
 
-    return true;
+        usleep(500000);
+    return 0;
 }
 
 /*
@@ -964,29 +876,6 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
         s_reg_ctrl->stat_val[a1->chain_id][chip_id-1] = a1->chips[chip_id-1].nVol;
         //s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]++;
         
-#if 0
-        s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]++;
-
-        if(s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1] == 1)
-        {
-            s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] = tmp_v;
-            s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] = tmp_v;
-            s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] = tmp_v;
-        }
-        else
-        {
-            if(s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] < tmp_v)
-            {
-                s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] = tmp_v;
-            }
-            if(s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] > tmp_v)
-            {
-                s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] = tmp_v;
-            }
-            s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] = (s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1]*(s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]-1) + tmp_v)/s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1];
-        }
-#endif
-        
         //applog(LOG_WARNING,"read tmp %f/%d form chain %d,chip %d h:%f,l:%f,av:%f,cnt:%d\n",tmp_v,rd_v,a1->chain_id, chip_id,s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1],s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]);
         nReadVolTimes++;
                     
@@ -1000,13 +889,10 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
             applog(LOG_ERR,"Notice chain %d maybe has some promble in voltage",a1->chain_id);
             nVolTotal = 0;
             nReadVolTimes = 0;
-            im_chain_power_down(a1->chain_id);
-            early_quit(1,"Notice chain %d maybe has some promble in voltage",a1->chain_id);
+            //im_chain_power_down(a1->chain_id);
+           // early_quit(1,"Notice chain %d maybe has some promble in voltage %d",a1->chain_id,tmp_v);
         }
-        if(nReadVolTimes == 3){
-            nReadVolTimes = 0;
-            nVolTotal = 0;
-        }
+        
     }
 
     return true;
@@ -1079,102 +965,5 @@ inno_type_e inno_get_miner_type(void)
 
     return miner_type;
 }
-/*
-int im_chain_power_on(int chain_id)
-{
-    if(im_get_plug(chain_id) != 0)
-    {
-        applog(LOG_WARNING, "chain %d >>> the board not inserted !!!", chain_id);
-        return -1;
-    }
-
-    im_set_power_en(chain_id, 1);
-    sleep(5);
-    im_set_reset(chain_id, 1);
-    sleep(1);
-    im_set_start_en(chain_id, 1);
-
-    applog(LOG_INFO, "power on chain %d", chain_id);
-
-    return 0;
-}
 
 
-int im_chain_power_down(int chain_id)
-{
-    im_set_power_en(chain_id, 0);
-    sleep(1);
-    im_set_reset(chain_id, 0);
-    im_set_start_en(chain_id, 0);
-    im_set_led(chain_id, 1);
-
-    applog(LOG_INFO, "power down chain %d", chain_id);
-
-    return 0;
-}
-
-int im_power_on_all_chain(void)
-{
-    int i;
-    int plugged[ASIC_CHAIN_NUM];
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        plugged[i] = im_get_plug(i);
-        if(plugged[i] != 0)
-        {
-            applog(LOG_INFO, "chain %d >>> board not inserted !!!", i);
-            continue;
-        }
-
-        im_set_power_en(i, 1);
-    }
-
-    sleep(5);
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        if(plugged[i] != 0)
-            continue;
-
-        im_set_reset(i, 1);
-    }
-
-    sleep(1);
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        if(plugged[i] != 0)
-            continue;
-
-        im_set_start_en(i, 1);
-
-        applog(LOG_INFO, "power on chain %d", i);
-    }
-
-    return 0;
-}
-
-int im_power_down_all_chain(void)
-{
-    int i;
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        im_set_power_en(i, 0);
-    }
-
-    sleep(1);
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        im_set_reset(i, 0);
-        im_set_start_en(i, 0);
-        im_set_led(i, 1);
-
-        applog(LOG_INFO, "power down chain %d", i);
-    }
-
-    return 0;
-}
-*/
