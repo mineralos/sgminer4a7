@@ -116,8 +116,8 @@ int opt_voltage6 = 8;
 int opt_voltage7 = 8;
 int opt_voltage8 = 8;
 
-im_fan_temp_s *fan_temp_ctrl;
-im_temp_s *tmp_ctrl;
+mcompat_fan_temp_s *fan_temp_ctrl;
+mcompat_temp_s *tmp_ctrl;
 
 static char packagename[256];
 
@@ -5664,7 +5664,7 @@ static void *stratum_rthread(void *userdata)
                 cnt++;
                 if(cnt > total_pools)
                 {
-                    im_chain_power_down_all();
+                    mcompat_chain_power_down_all();
                     cnt = 0;
                     applog(LOG_ERR, "!!!failed to restart stratum pool, exit!!!");
                     exit(1);        
@@ -8375,7 +8375,7 @@ int main(int argc, char *argv[])
 
     fan_temp_ctrl = malloc(sizeof(*fan_temp_ctrl));
     tmp_ctrl = malloc(ASIC_CHAIN_NUM * sizeof(*tmp_ctrl));
-    fan_temp_ctrl->im_temp = tmp_ctrl;
+    fan_temp_ctrl->mcompat_temp = tmp_ctrl;
 
 
     /* This dangerous functions tramples random dynamically allocated
@@ -8692,7 +8692,7 @@ int main(int argc, char *argv[])
         }
         if (!use_curses)
         {
-            im_chain_power_down_all();
+            mcompat_chain_power_down_all();
             early_quit(0, "No servers could be used! Exiting.");
         }   
 #ifdef HAVE_CURSES
@@ -8766,7 +8766,7 @@ begin_bench:
        {
        // inno_fan_speed_update(&g_fan_ctrl);
     //    hub_cmd_get_temp(fan_temp_ctrl);
-        im_fan_speed_update_hub(fan_temp_ctrl);
+        mcompat_fan_speed_update_hub(fan_temp_ctrl);
         last_temp_time = get_current_ms();
        }
 
@@ -8774,7 +8774,7 @@ begin_bench:
         if(g_reset_delay != 0xffff)
         {
             applog(LOG_INFO, "powerdown for api commond");
-            im_chain_power_down_all();
+            mcompat_chain_power_down_all();
             sleep(10);
             sleep(g_reset_delay);
             exit(1);
