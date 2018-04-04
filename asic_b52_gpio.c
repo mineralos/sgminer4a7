@@ -10,8 +10,8 @@
 
 #include "miner.h"
 #include "logging.h"
-#include "asic_inno.h"
-#include "asic_inno_gpio.h"
+#include "asic_b52.h"
+#include "asic_b52_gpio.h"
 
 #define IOCTL_SET_VAL_0 _IOR(MAGIC_NUM, 0, char *)
 #define IOCTL_SET_VALUE_0 _IOR(MAGIC_NUM, 0, char *)

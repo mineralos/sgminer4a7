@@ -1,10 +1,10 @@
-#ifndef _ASIC_INNO_CMD_
-#define _ASIC_INNO_CMD_
+#ifndef _ASIC_B52_CMD_
+#define _ASIC_B52_CMD_
 
 #include <pthread.h>
 #include <sys/time.h>
 
-#include "asic_inno.h"
+#include "asic_b52.h"
 
 #define CMD_TYPE_A7         0xb0
 #define CMD_TYPE_A8         0x30

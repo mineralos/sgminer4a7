@@ -10,17 +10,17 @@
 #include "util.h"
 
 #include "spi-context.h"
-#include "asic_inno.h"
-#include "asic_inno_cmd.h"
-#include "asic_inno_clock.h"
-#include "asic_inno_gpio.h"
-//#include "inno_fan.h"
+#include "asic_b52.h"
+#include "asic_b52_cmd.h"
+#include "asic_b52_clock.h"
+#include "asic_b52_gpio.h"
+//#include "b52_fan.h"
 
 
 //#define MAGIC_NUM  100 
 #define MUL_COEF 1.23
 
-extern inno_reg_ctrl_t s_reg_ctrl;
+extern b52_reg_ctrl_t s_reg_ctrl;
 
 int nReadVolTimes = 0;
 int nVolTotal = 0;
@@ -685,7 +685,8 @@ int prechain_detect(struct A1_chain *a1, int idxpll, int lastidx)
     int cid = a1->chain_id;
     uint8_t temp_reg[REG_LENGTH];
     int i,nCount = 0;
-  
+    
+     a1->base_pll = idxpll;
     //usleep(500000);
     
     for(i=lastidx; i<idxpll+1; i++)
@@ -705,6 +706,7 @@ int prechain_detect(struct A1_chain *a1, int idxpll, int lastidx)
           }
        
            usleep(20000);
+           a1->pll = i;
       }
         
         applog(LOG_WARNING, "chain %d set PLL Lv.%d success", cid, i);
@@ -731,7 +733,7 @@ int chain_detect(struct A1_chain *a1)
 }
 
 //add 0922
-void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
+void b52_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
 {
     //int i;
     unsigned char tmp_reg[REG_LENGTH] = {0};
@@ -827,7 +829,7 @@ void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
     }
 }
 
-int inno_get_voltage_stats(struct A1_chain *a1, inno_reg_ctrl_t *s_reg_ctrl)
+int b52_get_voltage_stats(struct A1_chain *a1, b52_reg_ctrl_t *s_reg_ctrl)
 {
     int i = 0;
     int cid = a1->chain_id;
@@ -854,7 +856,7 @@ int inno_get_voltage_stats(struct A1_chain *a1, inno_reg_ctrl_t *s_reg_ctrl)
     return 0;
 }
 
-bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg_ctrl)
+bool b52_check_voltage(struct A1_chain *a1, int chip_id, b52_reg_ctrl_t *s_reg_ctrl)
 {
   
     uint8_t reg[REG_LENGTH];
@@ -899,13 +901,13 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
 }
 
 
-hardware_version_e inno_get_hwver(void)
+hardware_version_e b52_get_hwver(void)
 {
     FILE* fd;
     char buffer[64] = {0};
     hardware_version_e version;
     
-    fd = fopen(INNO_HARDWARE_VERSION_FILE, "r");    
+    fd = fopen(B52_HARDWARE_VERSION_FILE, "r");    
     if(fd == NULL)
     {               
         applog(LOG_ERR, "Open hwver File Failed !");
@@ -930,13 +932,13 @@ hardware_version_e inno_get_hwver(void)
 }
 
 
-inno_type_e inno_get_miner_type(void)
+b52_type_e b52_get_miner_type(void)
 {
     FILE* fd;
     char buffer[64] = {0};
-    inno_type_e miner_type;
+    b52_type_e miner_type;
     
-    fd = fopen(INNO_MINER_TYPE_FILE, "r");  
+    fd = fopen(B52_MINER_TYPE_FILE, "r");  
     if(fd == NULL)
     {               
         applog(LOG_ERR, "Open type File Failed!");
@@ -947,16 +949,16 @@ inno_type_e inno_get_miner_type(void)
     fclose(fd);
 
     if(strstr(buffer, "T1") != NULL) {
-        miner_type = INNO_TYPE_A5;
+        miner_type = B52_TYPE_A5;
         applog(LOG_INFO, "miner type is T1");
     }else if(strstr(buffer, "T2") != NULL) {
-        miner_type = INNO_TYPE_A6;
+        miner_type = B52_TYPE_A6;
         applog(LOG_INFO, "miner type is T2");
     }else if(strstr(buffer, "T3") != NULL) {
-        miner_type = INNO_TYPE_A7;
+        miner_type = B52_TYPE_A7;
         applog(LOG_INFO, "miner type is T3");
     }else if(strstr(buffer, "T4") != NULL) {
-        miner_type = INNO_TYPE_A8;
+        miner_type = B52_TYPE_A8;
         applog(LOG_INFO, "miner type is T4");
     }else {
         miner_type = 0;

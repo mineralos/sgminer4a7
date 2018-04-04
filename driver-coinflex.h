@@ -30,7 +30,7 @@
 
 
 #include "miner.h"
-#include "asic_inno_cmd.h"
+#include "asic_b52_cmd.h"
 
 #define COINFLEX_DRIVER_NAME                            ("Coinflex")
 #define COINFLEX_DRIVER_VER                             ("1.0")

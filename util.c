@@ -41,7 +41,7 @@
 #include "miner.h"
 #include "elist.h"
 #include "compat.h"
-#include "asic_inno.h"
+#include "asic_b52.h"
 #include "util.h"
 
 #define DEFAULT_SOCKWAIT 60

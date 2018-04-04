@@ -28,9 +28,9 @@
 #include <assert.h>
 #include <signal.h>
 #include <limits.h>
-#include "asic_inno.h"
-#include "asic_inno_cmd.h"
-#include "asic_inno_clock.h"
+#include "asic_b52.h"
+#include "asic_b52_cmd.h"
+#include "asic_b52_clock.h"
 
 
 #ifdef USE_USBUTILS
@@ -76,7 +76,7 @@ char *curly = ":D";
 #if defined(USE_COINFLEX)
 #include "driver-coinflex.h"
 #endif
-#include "asic_inno_cmd.h"
+#include "asic_b52_cmd.h"
 
 #if defined(CHIP_A12)
 #include "sia.h"
@@ -8764,7 +8764,7 @@ begin_bench:
 
        if (last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
        {
-       // inno_fan_speed_update(&g_fan_ctrl);
+       // b52_fan_speed_update(&g_fan_ctrl);
     //    hub_cmd_get_temp(fan_temp_ctrl);
         mcompat_fan_speed_update_hub(fan_temp_ctrl);
         last_temp_time = get_current_ms();

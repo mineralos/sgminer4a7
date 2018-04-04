@@ -50,10 +50,10 @@
 #include "A1-board-selector.h"
 #include "A1-trimpot-mcp4x.h"
 
-#include "asic_inno.h"
-#include "asic_inno_clock.h"
-#include "asic_inno_cmd.h"
-#include "asic_inno_gpio.h"
+#include "asic_b52.h"
+#include "asic_b52_clock.h"
+#include "asic_b52_cmd.h"
+#include "asic_b52_gpio.h"
 
 #define WORK_SIZE               (80)
 #define DEVICE_TARGET_SIZE      (32)
@@ -100,11 +100,11 @@ char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
 char volShowLog[ASIC_CHAIN_NUM][256] = {0};
 
 hardware_version_e g_hwver;
-inno_type_e g_type;
+b52_type_e g_type;
 int g_reset_delay = 0xffff;
 int g_miner_state = 0;
 int chain_flag[ASIC_CHAIN_NUM] = {0};
-inno_reg_ctrl_t s_reg_ctrl;
+b52_reg_ctrl_t s_reg_ctrl;
 
 /* added by yex in 20170907 */
 /*
@@ -301,18 +301,18 @@ bool init_A1_chain_reload(struct A1_chain *a1, int chain_id)
     usleep(200);
 
     //configure for vsensor
-    inno_configure_tvsensor(a1,ADDR_BROADCAST,0);
+    b52_configure_tvsensor(a1,ADDR_BROADCAST,0);
     for (i = 0; i < a1->num_active_chips; i++){
-        inno_check_voltage(a1, i+1, &s_reg_ctrl);
+        b52_check_voltage(a1, i+1, &s_reg_ctrl);
     } 
 
     //configure for tsensor
-    inno_configure_tvsensor(a1,ADDR_BROADCAST,1);
-    inno_get_voltage_stats(a1, &s_reg_ctrl);
+    b52_configure_tvsensor(a1,ADDR_BROADCAST,1);
+    b52_get_voltage_stats(a1, &s_reg_ctrl);
     sprintf(volShowLog[a1->chain_id], "+         %2d  |  %8f  |  %8f  |  %8f  |\n",a1->chain_id,   \
             s_reg_ctrl.highest_vol[a1->chain_id],s_reg_ctrl.avarge_vol[a1->chain_id],s_reg_ctrl.lowest_vol[a1->chain_id]);
 
-    inno_log_record(a1->chain_id, volShowLog[a1->chain_id], strlen(volShowLog[0]));
+    b52_log_record(a1->chain_id, volShowLog[a1->chain_id], strlen(volShowLog[0]));
 
     for (i = 0; i < a1->num_active_chips; i++){
         check_chip(a1, i);
@@ -376,7 +376,7 @@ failure:
 }
 
 
-int inno_preinit( uint32_t pll, uint32_t last_pll)
+int b52_preinit( uint32_t pll, uint32_t last_pll)
 { 
     int i;
     static int ret[ASIC_CHAIN_NUM]={0};
@@ -423,7 +423,7 @@ static int inc_pll(void)
     {      
         i = (i >= opt_A1Pll1 ? opt_A1Pll1 : i);
 
-        inno_preinit(i,last_pll);
+        b52_preinit(i,last_pll);
         last_pll = i;
 
         for(j=0; j<ASIC_CHAIN_NUM; j++)
@@ -655,8 +655,8 @@ static void coinflex_detect(bool __maybe_unused hotplug)
     }
     applog(LOG_DEBUG, "A1 detect");
 
-    g_hwver = inno_get_hwver();
-    g_type = inno_get_miner_type();
+    g_hwver = b52_get_hwver();
+    g_type = b52_get_miner_type();
 
     // TODO: ?：＞?Y?：??：2??：：?hwvero：atype
     sys_platform_init(PLATFORM_ZYNQ_HUB_G19, -1, ASIC_CHAIN_NUM, ASIC_CHIP_NUM);
@@ -770,7 +770,7 @@ const char cLevelError4[3] = "%";
 const char cLevelError5[3] = "*";
 const char cLevelNormal[3] = "+";
 
-void Inno_Log_Save(struct A1_chip *chip,int nChip,int nChain)
+void B52_Log_Save(struct A1_chip *chip,int nChip,int nChain)
 {
     char szInNormal[8] = {0};
     memset(szInNormal,0, sizeof(szInNormal));
@@ -798,7 +798,7 @@ void Inno_Log_Save(struct A1_chip *chip,int nChip,int nChain)
             chip->hw_errors, chip->stales,chip->temp,chip->nVol,chip->num_cores,nChip,nChain);
 }
 
-void inno_log_print(int cid, void* log, int len)
+void b52_log_print(int cid, void* log, int len)
 {
     FILE* fd;
     char fileName[128] = {0};
@@ -818,7 +818,7 @@ void inno_log_print(int cid, void* log, int len)
     fclose(fd);
 }
 
-void inno_log_record(int cid, void* log, int len)
+void b52_log_record(int cid, void* log, int len)
 {
     FILE* fd;
     char fileName[128] = {0};
@@ -870,9 +870,9 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
 
         if(fan_temp_ctrl->mcompat_temp[cid].final_temp_avg && fan_temp_ctrl->mcompat_temp[cid].final_temp_hi && fan_temp_ctrl->mcompat_temp[cid].final_temp_lo)
         {
-            cgpu->temp = (float)((594 - fan_temp_ctrl->mcompat_temp[cid].final_temp_avg)* 5) / 7.5;
-            cgpu->temp_max = (float)((594 - fan_temp_ctrl->mcompat_temp[cid].final_temp_hi)* 5) / 7.5;
-            cgpu->temp_min = (float)((594 - fan_temp_ctrl->mcompat_temp[cid].final_temp_lo)* 5) / 7.5;
+            cgpu->temp = (double)((594 - fan_temp_ctrl->mcompat_temp[cid].final_temp_avg)* 5) / 7.5;
+            cgpu->temp_max = (double)((594 - fan_temp_ctrl->mcompat_temp[cid].final_temp_hi)* 5) / 7.5;
+            cgpu->temp_min = (double)((594 - fan_temp_ctrl->mcompat_temp[cid].final_temp_lo)* 5) / 7.5;
         }
 
         cgpu->fan_duty = fan_temp_ctrl->speed;
@@ -881,7 +881,7 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
 
         //printf("volShowLog[%d]=%s",cid,volShowLog[cid]);
 
-        inno_log_print(cid, szShowLog[cid], sizeof(szShowLog[0]));
+        b52_log_print(cid, szShowLog[cid], sizeof(szShowLog[0]));
 
         a1->last_temp_time = get_current_ms();
     }
@@ -932,7 +932,7 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
     }
     else
     {
-
+#if 1
        // mcompat_cmd_reset_reg(cid);
         for (i = a1->num_active_chips; i > 0; i--)
         {
@@ -975,7 +975,59 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
                }
             }
          }
+        #else
+        if(mcompat_cmd_read_register(a1->chain_id, ASIC_CHIP_NUM >> 2, reg, REG_LENGTH))
+        {
+            uint8_t qstate = reg[9] & 0x02;
+
+            if (qstate != 0x02)
+            {
+                work_updated = true;
+                for (i = a1->num_active_chips; i > 0; i--) 
+                {
+                    uint8_t c=i;
+                    struct A1_chip *chip = &a1->chips[i - 1];
+                    struct work *work = wq_dequeue(&a1->active_wq);
+                    if(work == NULL)
+                    {
+                        applog(LOG_ERR, "Wait work queue...");
+                        usleep(500);
+                        continue;
+                    }
+                    //assert(work != NULL);
+
+                    if (set_work(a1, c, work, 0))
+                    {
+                        nonce_ranges_processed++;
+                        chip->nonce_ranges_done++;
+                    }
+
+                    if(show_log[cid] > 0)                   
+                    {   
+                        B29_Log_Save(chip,c-1,cid);
+                        if(i==1) show_log[cid] = 0; 
+                    }
+                }
+            }
+        }
+        #endif
     }
+
+#if 0
+    if (last_temp_time + 60*TEMP_UPDATE_INT_MS < get_current_ms())
+    {
+        //if(cnt > VOLTAGE_UPDATE_INT){
+        //configure for vsensor
+        b29_configure_tvsensor(a1,ADDR_BROADCAST,0);
+        for (i = 0; i < a1->num_active_chips; i++){
+            b29_check_voltage(a1, i+1, &s_reg_ctrl);
+        }
+        last_temp_time = get_current_ms();
+        //configure for tsensor
+        b29_configure_tvsensor(a1,ADDR_BROADCAST,1);
+        usleep(200);
+    }
+#endif
 
 
 #ifdef USE_AUTONONCE
@@ -998,31 +1050,125 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
     if (!work_updated) // after work updated, also delay 10ms
         cgsleep_ms(5);
 
+            cgpu->mhs_av = ((double)opt_A1Pll1*a1->tvScryptDiff.tv_usec /2) * (a1->num_cores);
+  
 
-    return ((((double)opt_A1Pll1*a1->tvScryptDiff.tv_usec /2) * (a1->num_cores)));
+
+
+    return cgpu->mhs_av;
     }
 
+#if 0
+    static void coinflex_print_hw_error(char *drv_name, int device_id, struct work *work, uint32_t nonce)
+    {
+        char        *twork;
+        char        twork_data[BUF_SIZE];
+        int     twork_index;
+        int     display_size = 16;      // 16 Bytes
 
-struct device_drv coinflex_drv = 
+        applog(LOG_ERR, "---------------------------------------------------------");
+        applog(LOG_ERR, "[%s %d]:ERROR  - Nonce = 0x%X,Work_ID = %3d", drv_name, device_id, nonce, work->work_id);
+        twork = bin2hex(work->data, WORK_SIZE);                     // Multiply 2 for making string in bin2hex()
+        for(twork_index = 0; twork_index < (WORK_SIZE * 2); twork_index += (display_size * 2))
+        {
+            snprintf(twork_data, (display_size * 2) + 1, "%s", &twork[twork_index]);
+            applog(LOG_ERR, "Work Data      = %s", twork_data);
+        }
+        free(twork);
+        twork = bin2hex(work->device_target, DEVICE_TARGET_SIZE);       // Multiply 2 for making string in bin2hex()
+        for(twork_index = 0; twork_index < (DEVICE_TARGET_SIZE * 2); twork_index += (display_size * 2))
+        {
+            snprintf(twork_data, (display_size * 2) + 1, "%s", &twork[twork_index]);
+            applog(LOG_ERR, "Device Target  = %s", twork_data);
+        }
+        free(twork);
+        applog(LOG_ERR, "---------------------------------------------------------");
+    }
+#endif
+
+static struct api_data *coinflex_api_stats(struct cgpu_info *cgpu)
 {
-    .drv_id                 = DRIVER_coinflex,
-    .dname                  = "HLT_Coinflex",
-    .name                   = "HLT",
-    .drv_ver                = COINFLEX_DRIVER_VER,
-    .drv_date               = COINFLEX_DRIVER_DATE,
-    .drv_detect             = coinflex_detect,
-    .get_statline_before    = coinflex_get_statline_before,
-    .queue_full             = coinflex_queue_full,
-    .get_api_stats          = NULL,
-    .identify_device        = NULL,
-    .set_device             = NULL,
-    .thread_prepare         = NULL,
-    .thread_shutdown        = NULL,
-    .hw_reset               = NULL,
-    .hash_work              = hash_queued_work,
-    .update_work            = NULL,
-    .flush_work             = coinflex_flush_work,          // new block detected or work restart 
-    .scanwork               = coinflex_scanwork,            // scan hash
-    .max_diff               = 65536
-};
+    struct A1_chain *t1 = cgpu->device_data;
+    unsigned long long int chipmap = 0;
+    struct api_data *root = NULL;
+    char s[32];
+    int i;
+
+    ROOT_ADD_API(int, "Chain ID", t1->chain_id, false);
+    ROOT_ADD_API(int, "Num chips", t1->num_chips, false);
+    ROOT_ADD_API(int, "Num cores", t1->num_cores, false);
+    ROOT_ADD_API(int, "Num active chips", t1->num_active_chips, false);
+    ROOT_ADD_API(int, "Chain skew", t1->chain_skew, false);
+    ROOT_ADD_API(double, "Temp max", cgpu->temp_max, false);
+    ROOT_ADD_API(double, "Temp min", cgpu->temp_min, false);
+    for (i = 0; i < 4; i++) {
+        sprintf(s, "Temp prewarn %d", i);
+        ROOT_ADD_API(int, s, cgpu->temp_prewarn[i], false);
+    }
+    ROOT_ADD_API(int, "Fan duty", cgpu->fan_duty, false);
+    //	ROOT_ADD_API(bool, "FanOptimal", g_fan_ctrl.optimal, false);
+    ROOT_ADD_API(int, "iVid", t1->vid, false);
+    ROOT_ADD_API(bool, "VidOptimal", t1->VidOptimal, false);
+    ROOT_ADD_API(int, "Chain num", cgpu->chainNum, false);
+    ROOT_ADD_API(double, "MHS av", cgpu->mhs_av, false);
+    ROOT_ADD_API(bool, "Disabled", t1->disabled, false);
+    for (i = 0; i < t1->num_chips; i++) {
+        if (!t1->chips[i].disabled)
+            chipmap |= 1 << i;
+    }
+    sprintf(s, "%Lx", chipmap);
+    ROOT_ADD_API(string, "Enabled chips", s[0], true);
+    ROOT_ADD_API(double, "Temp", cgpu->temp, false);
+    ROOT_ADD_API(int, "Last temp time", t1->last_temp_time, false);
+
+    for (i = 0; i < t1->num_chips; i++) {
+        sprintf(s, "%02d HW errors", i);
+        ROOT_ADD_API(int, s, t1->chips[i].hw_errors, false);
+        sprintf(s, "%02d Stales", i);
+        ROOT_ADD_API(int, s, t1->chips[i].stales, false);
+        sprintf(s, "%02d Nonces found", i);
+        ROOT_ADD_API(int, s, t1->chips[i].nonces_found, false);
+        sprintf(s, "%02d Nonce ranges", i);
+        ROOT_ADD_API(int, s, t1->chips[i].nonce_ranges_done, false);
+        sprintf(s, "%02d Cooldown", i);
+        ROOT_ADD_API(int, s, t1->chips[i].cooldown_begin, false);
+        sprintf(s, "%02d Fail count", i);
+        ROOT_ADD_API(int, s, t1->chips[i].fail_count, false);
+        sprintf(s, "%02d Fail reset", i);
+        ROOT_ADD_API(int, s, t1->chips[i].fail_reset, false);
+        sprintf(s, "%02d Temp", i);
+        ROOT_ADD_API(int, s, t1->chips[i].temp, false);
+        sprintf(s, "%02d nVol", i);
+        ROOT_ADD_API(int, s, t1->chips[i].nVol, false);
+        sprintf(s, "%02d PLL", i);
+        ROOT_ADD_API(int, s, t1->chips[i].pll, false);
+        sprintf(s, "%02d pllOptimal", i);
+        ROOT_ADD_API(bool, s, t1->chips[i].pllOptimal, false);
+    }
+    return root;
+}
+
+
+    struct device_drv coinflex_drv = 
+    {
+        .drv_id                 = DRIVER_coinflex,
+        .dname                  = "HLT_Coinflex",
+        .name                   = "HLT",
+        .drv_ver                = COINFLEX_DRIVER_VER,
+        .drv_date               = COINFLEX_DRIVER_DATE,
+        .drv_detect             = coinflex_detect,
+        .get_statline_before    = coinflex_get_statline_before,
+        .queue_full             = coinflex_queue_full,
+        .get_api_stats          = coinflex_api_stats,
+        .identify_device        = NULL,
+        .set_device             = NULL,
+        .thread_prepare         = NULL,
+        .thread_shutdown        = NULL,
+        .hw_reset               = NULL,
+        .hash_work              = hash_queued_work,
+        .update_work            = NULL,
+        .flush_work             = coinflex_flush_work,          // new block detected or work restart 
+        .scanwork               = coinflex_scanwork,            // scan hash
+        .max_diff               = 65536
+    };
 
