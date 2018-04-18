@@ -22,6 +22,8 @@
 #define ASIC_CHAIN_NUM          (3)
 #define ASIC_CHIP_NUM           (45)    // 45
 #define ASIC_CORE_NUM           (63)    // 63
+#define MAX_CHIP_NUM            (ASIC_CHIP_NUM)
+#define MAX_CORES               (MAX_CHIP_NUM * ASIC_CORE_NUM)
 #endif
 
 
@@ -85,9 +87,9 @@ typedef enum{
 }b52_type_e;
 
 typedef struct{
-   float highest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
-   float lowest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
-   float avarge_vol[ASIC_CHAIN_NUM];    /* chip temp bits */; 
+   double highest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
+   double lowest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
+   double average_vol[ASIC_CHAIN_NUM];    /* chip temp bits */; 
    int stat_val[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];
    int stat_cnt[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];
 }b52_reg_ctrl_t;
@@ -160,6 +162,7 @@ struct A1_chain {
 	double product; // Hashrate product of cycles / time
 	bool VidOptimal; // We've stopped tuning voltage
 	bool pllOptimal; // We've stopped tuning frequency
+	bool voltagebalanced; // We've balanced voltage b/w chips
 
     /* mark chain disabled, do not try to re-enable it */
     bool disabled;
