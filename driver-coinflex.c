@@ -613,7 +613,7 @@ mcompat_temp_config_s temp_config;
 temp_config.temp_hi_thr = 408;
 temp_config.temp_lo_thr = 652;
 temp_config.temp_start_thr = 550;
-temp_config.dangerous_stat_temp = 445;
+temp_config.dangerous_stat_temp = 438;
 temp_config.work_temp = 483;
 temp_config.default_fan_speed = 100;
 mcompat_fan_temp_init(0,temp_config);

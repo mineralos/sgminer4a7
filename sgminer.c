@@ -105,16 +105,16 @@ uint32_t opt_A1Pll8=1000; // -1 Default
 
 #endif
 
-int opt_voltage = 8;
+int opt_voltage = CHIP_VID_DEF;
 
-int opt_voltage1 = 8;
-int opt_voltage2 = 8;
-int opt_voltage3 = 8;
-int opt_voltage4 = 8;
-int opt_voltage5 = 8;
-int opt_voltage6 = 8;
-int opt_voltage7 = 8;
-int opt_voltage8 = 8;
+int opt_voltage1 = CHIP_VID_DEF;
+int opt_voltage2 = CHIP_VID_DEF;
+int opt_voltage3 = CHIP_VID_DEF;
+int opt_voltage4 = CHIP_VID_DEF;
+int opt_voltage5 = CHIP_VID_DEF;
+int opt_voltage6 = CHIP_VID_DEF;
+int opt_voltage7 = CHIP_VID_DEF;
+int opt_voltage8 = CHIP_VID_DEF;
 
 mcompat_fan_temp_s *fan_temp_ctrl;
 mcompat_temp_s *tmp_ctrl;

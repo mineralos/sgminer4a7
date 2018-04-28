@@ -53,7 +53,7 @@
 
 #ifdef CHIP_A12
 #define CHIP_PLL_DEF            (30)
-#define CHIP_VID_DEF            (8)
+#define CHIP_VID_DEF            (12)
 #define CHIP_VOL_MAX            (0.6)
 #define CHIP_VOL_MIN            (0.45)
 #else
