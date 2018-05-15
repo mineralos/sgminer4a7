@@ -41,7 +41,6 @@
 #include "miner.h"
 #include "elist.h"
 #include "compat.h"
-#include "asic_b52.h"
 #include "util.h"
 
 #define DEFAULT_SOCKWAIT 60
@@ -1738,21 +1737,6 @@ static bool parse_notify(struct pool *pool, json_t *val)
     ntime = __json_array_string(val, 7);
     clean = json_is_true(json_array_get(val, 8));
 
-#ifdef SIA_DEBUG_MODE
-    memcpy(prev_hash, SIA_DBG_PREVHASH, 64);
-    memcpy(ntime, SIA_DBG_NTIME, 16);
-    memcpy(job_id, "1234", 4);
-
-    applog(LOG_INFO, "job_id (%d): %s", strlen(job_id), job_id);
-    applog(LOG_INFO, "prev_hash (%d): %s", strlen(prev_hash), prev_hash);
-    applog(LOG_INFO, "coinbase1 (%d): %s", strlen(coinbase1), coinbase1);
-    applog(LOG_INFO, "coinbase2 (%d): %s", strlen(coinbase2), coinbase2);
-    applog(LOG_INFO, "merkles size: %d", merkles);
-    applog(LOG_INFO, "bbversion (%d): %s", strlen(bbversion), bbversion);
-    applog(LOG_INFO, "nbit (%d): %s", strlen(nbit), nbit);
-    applog(LOG_INFO, "ntime (%d): %s", strlen(ntime), ntime);
-#endif
-
     if (!valid_ascii(job_id) || !valid_hex(prev_hash) || !valid_hex(coinbase1) ||
         !valid_hex(coinbase2) || !valid_hex(bbversion) || !valid_hex(nbit) ||
         !valid_hex(ntime)) {
@@ -1771,11 +1755,7 @@ static bool parse_notify(struct pool *pool, json_t *val)
     cb2_len = strlen(coinbase2) / 2;
     snprintf(pool->bbversion, 9, "%s", bbversion);
     snprintf(pool->nbit, 9, "%s", nbit);
-#ifdef CHIP_A12
-    snprintf(pool->ntime, 17, "%s", ntime);
-#else
     snprintf(pool->ntime, 9, "%s", ntime);
-#endif
     pool->swork.clean = clean;
     alloc_len = pool->coinbase_len = cb1_len + pool->n1_len + pool->n2size + cb2_len;
     pool->nonce2_offset = cb1_len + pool->n1_len;
@@ -1813,19 +1793,6 @@ static bool parse_notify(struct pool *pool, json_t *val)
     /* nonce */      8 +
     /* workpadding */    96;
 #endif
-
-#ifdef CHIP_A12
-    snprintf(header, 161,
-        "%s%s%s%s",
-        pool->prev_hash,
-#ifdef SIA_DEBUG_MODE
-        SIA_DBG_NONCE,
-#else
-        "0000000000000000", /* 8 bytes nonce */
-#endif
-        pool->ntime,
-        blank_merkle);
-#else
     snprintf(header, 225,
         "%s%s%s%s%s%s%s",
         pool->bbversion,
@@ -1833,20 +1800,13 @@ static bool parse_notify(struct pool *pool, json_t *val)
         blank_merkle,
         pool->ntime,
         pool->nbit,
-        "00000000", /* 4 bytes nonce */
+        "00000000", /* nonce */
         workpadding);
-#endif
-
-//    applog(LOG_INFO, "header: %s", header);
-    ret = hex2bin(pool->header_bin, header, BLOCK_HEADER_LEN);
+    ret = hex2bin(pool->header_bin, header, 112);
     if (unlikely(!ret)) {
         applog(LOG_ERR, "Failed to convert header to header_bin in parse_notify");
         goto out_unlock;
     }
-
-#ifdef CHIP_A12
-    flip80(pool->header_bin, pool->header_bin); // to le
-#endif
 
     cb1 = alloca(cb1_len);
     ret = hex2bin(cb1, coinbase1, cb1_len);

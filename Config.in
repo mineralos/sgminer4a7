@@ -1,0 +1,12 @@
+config BR2_PACKAGE_SGMINER4T3
+	bool "sgminer4t3"
+	depends on !BR2_PACKAGE_CGMINER
+	depends on !BR2_PACKAGE_CGMINER4T4
+	depends on !BR2_PACKAGE_SGMINER4A11
+    depends on !BR2_PACKAGE_SGMINER4A12
+	select BR2_PACKAGE_JANSSON
+	select BR2_PACKAGE_MCOMPAT
+	help
+	  This is a multi-threaded multi-pool FPGA and ASIC miner for dash.
+
+	  https://github.com/ckolivas/sgminer4t3

@@ -30,12 +30,12 @@
 
 
 #include "miner.h"
-#include "asic_b52_cmd.h"
+#include "asic_inno_cmd.h"
 
 #define COINFLEX_DRIVER_NAME                            ("Coinflex")
 #define COINFLEX_DRIVER_VER                             ("1.0")
 #define COINFLEX_DRIVER_DATE                            ("2017.09.09")
-#define COINFLEX_SCANTIME_DEF                           (5)                // refer to static bool coinflex_cal_working_time(struct cgpu_info *coinflex)
+#define COINFLEX_SCANTIME_DEF                           (15)                // refer to static bool coinflex_cal_working_time(struct cgpu_info *coinflex)
 
 
 

@@ -1,0 +1,19 @@
+{
+"pools" : [
+    {
+        "url" : "stratum+tcp://dash.f2pool.com:5588",
+		"user" : "XnZDk7oqocn7o7a343bjVqyAQQgLE7ZQHQ.510",
+		"pass" : "x"
+    },
+	{
+		"url" : "stratum+tcp://dash.s.innomining.com:2000",
+		"user" : "inno.dash510",
+		"pass" : "x"
+	}
+
+],
+
+"api-listen" : true,
+"api-port" : "4028",
+"api-allow" : "R:0/0,W:127.0.0.1"
+}

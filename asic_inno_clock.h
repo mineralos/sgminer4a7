@@ -1,7 +1,7 @@
-#ifndef _ASIC_B52_CLOCK_
-#define _ASIC_B52_CLOCK_
+#ifndef _ASIC_INNO_CLOCK_
+#define _ASIC_INNO_CLOCK_
 
-#include "asic_b52.h"
+#include "asic_inno.h"
 
 #define A1_PLL_POSTDIV_MASK     0b11
 #define A1_PLL_PREDIV_MASK      0b11111
@@ -19,13 +19,9 @@
                            //     0:  Internal  SPI  frequency  is System  clock  frequency  divide 128
 
 
-#if defined(CHIP_A11) || defined(CHIP_A12)   
-#define A4_PLL(prediv,fbdiv,postdiv) ((prediv<<(89-64))|fbdiv<<(80-64)|0b010<<(77-64)|postdiv<<(78-64)|0x02)
-#else
 #define A4_PLL(prediv,fbdiv,postdiv) ((prediv<<(89-64))|fbdiv<<(80-64)|0b010<<(77-64)|postdiv<<(70-64))
-#endif
 
-#define PLL_LV_NUM          (359)
+#define A7_PLL_LV_NUM          (119)
 
 typedef enum
 {
@@ -94,8 +90,8 @@ typedef enum
 
 
 struct PLL_Clock {
-    uint32_t num;       // divider 1000
-    uint32_t speedMHz;  // unit MHz
+    uint32_t num;   // divider 1000
+    uint32_t speedMHz;      // unit MHz
     uint32_t pll_reg;
 };
 
@@ -109,12 +105,11 @@ struct A1_config_options {
     int wiper;
 };
 
-void A1_SetA1PLLClock(struct A1_chain *a1,int pllClkIdx);
+bool A1_SetA1PLLClock(struct A1_chain *a1,int pllClkIdx, int chip_id);
+
 int A1_ConfigA1PLLClock(int optPll);
 
-extern const struct PLL_Clock PLL_Clk_12Mhz[PLL_LV_NUM];
-
-
+extern const struct PLL_Clock PLL_Clk_12Mhz_33[A7_PLL_LV_NUM];
 
 
 #endif

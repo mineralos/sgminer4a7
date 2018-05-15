@@ -43,8 +43,8 @@ sgminer_SOURCES	+= noncedup.c
 
 sgminer_SOURCES += scrypt.c scrypt.h
 
-#sgminer_SOURCES += darkcoin.c darkcoin.h
-#sgminer_SOURCES += marucoin.c marucoin.h
+sgminer_SOURCES += darkcoin.c darkcoin.h
+sgminer_SOURCES += marucoin.c marucoin.h
 
 # Device drivers
 if HAS_LTCTECH
@@ -62,11 +62,12 @@ sgminer_SOURCES += A1-board-selector-CCD.c A1-board-selector-CCR.c
 sgminer_SOURCES += A1-trimpot-mcp4x.h A1-trimpot-mcp4x.c
 sgminer_SOURCES += i2c-context.c i2c-context.h
 
-sgminer_SOURCES += asic_b52.c
-sgminer_SOURCES += asic_b52_cmd.c
-sgminer_SOURCES += asic_b52_clock.c
-sgminer_SOURCES += asic_b52_gpio.c
-sgminer_SOURCES += sia.c
+sgminer_SOURCES += asic_inno.c
+sgminer_SOURCES += asic_inno_cmd.c
+sgminer_SOURCES += asic_inno_clock.c
+sgminer_SOURCES += asic_inno_gpio.c
+#sgminer_SOURCES += inno_fan.c
+#sgminer_SOURCES += inno_log.c
 #sgminer_SOURCES += scrypt.c
 # bitstreamsdir = $(bindir)/bitstreams						# Blocked by HKS 2016.07.05
 # dist_bitstreams_DATA = $(top_srcdir)/bitstreams/README	# Blocked by HKS 2016.07.05
