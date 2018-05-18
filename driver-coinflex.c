@@ -1132,6 +1132,8 @@ static struct api_data *coinflex_api_stats(struct cgpu_info *cgpu)
 	ROOT_ADD_API(string, "Enabled chips", s[0], true);
 	ROOT_ADD_API(double, "Temp", cgpu->temp, false);
 
+    int nTemp = 0;
+    double fVolValue = 0;
 	for (i = 0; i < t1->num_chips; i++) {
 		sprintf(s, "%02d HW errors", i);
 		ROOT_ADD_API(int, s, t1->chips[i].hw_errors, true);
@@ -1148,9 +1150,11 @@ static struct api_data *coinflex_api_stats(struct cgpu_info *cgpu)
 		sprintf(s, "%02d Fail reset", i);
 		ROOT_ADD_API(int, s, t1->chips[i].fail_reset, true);
 		sprintf(s, "%02d Temp", i);
-		ROOT_ADD_API(int, s, t1->chips[i].temp, true);
+        nTemp = (int)((594 - t1->chips[i].temp)* 5) / 7.5;
+		ROOT_ADD_API(int, s, nTemp , true);
 		sprintf(s, "%02d nVol", i);
-		ROOT_ADD_API(int, s, t1->chips[i].nVol, true);
+        fVolValue = (double)(t1->chips[i].nVol)/1000;
+		ROOT_ADD_API(double, s, fVolValue, true);
 		sprintf(s, "%02d PLL", i);
 		ROOT_ADD_API(int, s, t1->chips[i].pll, true);
 		sprintf(s, "%02d pllOptimal", i);
