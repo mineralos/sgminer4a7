@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "elist.h"
 #include "mcompat_drv.h"
+#include "mcompat_lib.h"
 #include "asic_inno_cmd.h"
 
 

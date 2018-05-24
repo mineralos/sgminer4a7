@@ -671,7 +671,7 @@ static void coinflex_detect(bool __maybe_unused hotplug)
     g_type = inno_get_miner_type();
 
     // TODO: ¸ù¾Ý½Ó¿Ú»ñÈ¡hwverºÍtype
-    sys_platform_init(PLATFORM_ZYNQ_HUB_G19, -1, ASIC_CHAIN_NUM, ASIC_CHIP_NUM);
+    sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_A5, ASIC_CHAIN_NUM, ASIC_CHIP_NUM);
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
     sys_platform_debug_init(3);
     config_fan_module();
