@@ -128,15 +128,11 @@ extern uint32_t opt_A1Pll6;
 extern uint32_t opt_A1Pll7;
 extern uint32_t opt_A1Pll8;
 
-extern int opt_voltage;
-extern int opt_voltage1;
-extern int opt_voltage2;
-extern int opt_voltage3;
-extern int opt_voltage4;
-extern int opt_voltage5;
-extern int opt_voltage6;
-extern int opt_voltage7;
-extern int opt_voltage8;
+extern int opt_voltage[];
+extern int g_auto_fan;
+extern int g_fan_speed;
+
+
 
 extern int g_reset_delay;
 extern int g_miner_state;
@@ -345,7 +341,8 @@ struct device_drv {
     void (*reinit_device)(struct cgpu_info *);
     void (*get_statline_before)(char *, size_t, struct cgpu_info *);
     void (*get_statline)(char *, size_t, struct cgpu_info *);
-    struct api_data *(*get_api_stats)(struct cgpu_info *);
+    struct api_data *(*get_api_stats)(struct cgpu_info *);  
+    struct api_data *(*get_api_debug)(struct cgpu_info *);
     bool (*get_stats)(struct cgpu_info *);
     void (*identify_device)(struct cgpu_info *); // e.g. to flash a led
     char *(*set_device)(struct cgpu_info *, char *option, char *setting, char *replybuf);

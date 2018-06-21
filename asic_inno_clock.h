@@ -105,11 +105,5 @@ struct A1_config_options {
     int wiper;
 };
 
-bool A1_SetA1PLLClock(struct A1_chain *a1,int pllClkIdx, int chip_id);
-
-int A1_ConfigA1PLLClock(int optPll);
-
-extern const struct PLL_Clock PLL_Clk_12Mhz_33[A7_PLL_LV_NUM];
-
 
 #endif

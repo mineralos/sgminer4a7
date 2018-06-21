@@ -29,7 +29,7 @@
 #define ASIC_RESULT_LEN     6
 #define READ_RESULT_LEN     (ASIC_RESULT_LEN + 2)
 
-#define REG_LENGTH      14
+#define REG_LENGTH_SG      12
 #define JOB_LENGTH      98
 
 
@@ -115,6 +115,8 @@ struct A1_chain {
     int last_temp_time;
     int pre_heat;
 
+    time_t lastshare;
+
     struct timeval tvScryptLast;
     struct timeval tvScryptCurr;
     struct timeval tvScryptDiff;
@@ -122,10 +124,6 @@ struct A1_chain {
 };
 
 uint16_t CRC16_2(unsigned char* pchMsg, unsigned short wDataLen);
-
-bool mcompat_cmd_resetall(uint8_t chain_id, uint8_t chip_id, uint8_t *result);
-bool mcompat_cmd_resetjob(uint8_t chain_id, uint8_t chip_id, uint8_t *result);
-bool mcompat_cmd_resetbist(uint8_t chain_id, uint8_t chip_id, uint8_t *result);
 void hexdump_error(char *prefix, uint8_t *buff, int len);
 void hexdump(char *prefix, uint8_t *buff, int len);
 

@@ -15,58 +15,141 @@
 #include "asic_inno_clock.h"
 #include "asic_inno_gpio.h"
 
-
-
 //#define MAGIC_NUM  100 
 #define MUL_COEF 1.23
 extern struct spi_ctx *spi[ASIC_CHAIN_NUM];
 extern struct A1_chain *chain[ASIC_CHAIN_NUM];
-
-
-static const float inno_vsadc_table[] = {   
-    0.54691,
-    0.54382,
-    0.54073,
-    0.53764,
-    0.53455,
-    0.53145,
-    0.52827,
-    0.52518,
-    0.52200,
-    0.51882,
-    0.51573,
-    0.51264,
-    0.50945,
-    0.50636,
-    0.50318,
-    0.50009,
-    0.49691,
-    0.49373,
-    0.49064,
-    0.48755,
-    0.48445,
-    0.48118,
-    0.47818,
-    0.47500,
-    0.47191,
-    0.46891,
-    0.46582,
-    0.46264,
-    0.45964,
-    0.45645,
-    0.45345,
-    0.45027,
-};
-
-
 
 extern inno_reg_ctrl_t s_reg_ctrl;
 
 int nReadVolTimes = 0;
 int nVolTotal = 0;
 
+const int g_pll_list[PLL_LV_NUM] =
+{
+        120,
+        125,
+        129,  
+        140,  
+        150,
+        159,  
+        171,  
+        180,  
+        189,  
+        201,  
+        210,  
+        219,  
+        231,  
+        240,  
+        249,  
+        261,  
+        270,  
+        279,  
+        291,  
+        300,  
+        312,  
+        318,  
+        330,  
+        342,  
+        348,  
+        360,  
+        372,  
+        378,  
+        390,  
+        402,  
+        408,  
+        420,  
+        432,  
+        438,  
+        450,  
+        462,  
+        468,  
+        480,  
+        492,  
+        498,  
+        510,  
+        522,  
+        528,  
+        540,  
+        552,  
+        558,  
+        570,  
+        582,  
+        588,  
+        600,  
+        612,  
+        624,  
+        630,  
+        636,  
+        648,  
+        660,  
+        672,  
+        684,  
+        690,  
+        696,  
+        708,  
+        720,  
+        732,  
+        744,  
+        750,  
+        756,  
+        768,  
+        780,  
+        792,  
+        804,  
+        810,  
+        816,  
+        828,  
+        840,  
+        852,  
+        864,  
+        870,  
+        876,  
+        888,  
+        900,  
+        912,  
+        924,  
+        930,  
+        936,  
+        948,  
+        960,  
+        972,  
+        984,  
+        990,  
+        996,  
+        1008, 
+        1020, 
+        1032, 
+        1044, 
+        1050, 
+        1056, 
+        1068, 
+        1080, 
+        1092, 
+        1104, 
+        1110, 
+        1116, 
+        1128, 
+        1140, 
+        1152, 
+        1164, 
+        1170, 
+        1176, 
+        1188, 
+        1200, 
+        1212, 
+        1224, 
+        1230, 
+        1236, 
+        1248, 
+        1260, 
+        1272, 
+        1284, 
+        1296 
+};
 
-const uint8_t default_reg_33[119][12] = 
+
+const uint8_t g_pll_regs[PLL_LV_NUM][REG_LENGTH_SG] = 
 {
     {0x02, 0x50, 0x40, 0xc2, 0x00, 0x00, 0x00, 0xa0, 0x00, 0x24, 0x00, 0x00}, //120MHz
     {0x02, 0x53, 0x40, 0xc2, 0x00, 0x00, 0x00, 0xa0, 0x00, 0x24, 0x00, 0x00}, //125MHz
@@ -552,13 +635,32 @@ static const uint8_t default_reg_57[359][12] =
     {0x02, 0x6c, 0x40, 0x02, 0x00, 0x00, 0x00, 0xa0, 0x00, 0x20, 0x00, 0x00}     // 1296MHz
 };
 
+
+static const uint8_t difficult_Tbl[6][8] = {
+	 /*1*/
+ 	 {0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00},
+ 	 /*4*/
+ 	 {0x00, 0xc0, 0xff, 0x3f, 0x00, 0x00, 0x00, 0x00},
+ 	 /*8*/
+     {0x00, 0xe0, 0xff, 0x1f, 0x00, 0x00, 0x00, 0x00}, 
+     /*16*/
+     {0x00, 0xf0, 0xff, 0x0f, 0x00, 0x00, 0x00, 0x00},   
+ 	 /*32*/
+ 	 {0x00, 0xf8, 0xff, 0x07, 0x00, 0x00, 0x00, 0x00},
+ 	 /*64*/
+ 	 {0x00, 0xfc, 0xff, 0x03, 0x00, 0x00, 0x00, 0x00},
+};
+
+
 static uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
 {
-        int i;
-        uint16_t crc;
-        uint8_t spi_tx[128];
-        uint8_t spi_rx[128];
-        uint8_t tmp_buf[128];
+    int i;
+    uint16_t crc;
+    uint8_t spi_tx[128] = {0};
+    uint8_t tmp_buf[128] = {0};
+    
+    double sdiff = work->device_diff;
+    char* target = NULL;
         
     static uint8_t job[JOB_LENGTH] = {
           /* command */
@@ -583,62 +685,75 @@ static uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
           /* crc data */
           0x00, 0x00
       };
-
-
-    
-    
-        //job_id = 1;
-        memset(spi_tx, 0, sizeof(spi_tx));
-        memset(spi_rx, 0, sizeof(spi_rx));
-    
-        //printf("send command [writ_job] \r\n");
         
         // cmd
-        spi_tx[0] = ((job_id & 0x0f) << 4) | CMD_WRITE_JOB;
-        spi_tx[1] = chip_id;
+        job[0] = ((job_id & 0x0f) << 4) | CMD_WRITE_JOB;
+        job[1] = chip_id;
         
         // data
         for(i = 0; i < 19; i++)
         {
-            spi_tx[2 + (i * 4) + 0] = (uint8_t)((work->data[4*i+ 3] ) & 0xff);
-            spi_tx[2 + (i * 4) + 1] = (uint8_t)((work->data[4*i+ 2] ) & 0xff);
-            spi_tx[2 + (i * 4) + 2] = (uint8_t)((work->data[4*i+ 1] ) & 0xff);
-            spi_tx[2 + (i * 4) + 3] = (uint8_t)((work->data[4*i+ 0] ) & 0xff);
+            job[2 + (i * 4) + 0] = (uint8_t)((work->data[4*i+ 3] ) & 0xff);
+            job[2 + (i * 4) + 1] = (uint8_t)((work->data[4*i+ 2] ) & 0xff);
+            job[2 + (i * 4) + 2] = (uint8_t)((work->data[4*i+ 1] ) & 0xff);
+            job[2 + (i * 4) + 3] = (uint8_t)((work->data[4*i+ 0] ) & 0xff);
         }
         
-        spi_tx[78] = (uint8_t)((work->data[76]) & 0xff);
-        spi_tx[79] = (uint8_t)((work->data[77]) & 0xff);
-        spi_tx[80] = (uint8_t)((work->data[78]) & 0xff);
-        spi_tx[81] = (uint8_t)((work->data[79]) & 0xff);
+        job[78] = (uint8_t)((work->data[76]) & 0xff);
+        job[79] = (uint8_t)((work->data[77]) & 0xff);
+        job[80] = (uint8_t)((work->data[78]) & 0xff);
+        job[81] = (uint8_t)((work->data[79]) & 0xff);
+
+    	if (sdiff>63)		
+    		target = difficult_Tbl[5];
+    	else if (sdiff>31)
+    		target = difficult_Tbl[4];
+    	else if (sdiff > 15)
+    		target = difficult_Tbl[3];
+        else if (sdiff > 7)
+    		target = difficult_Tbl[2];
+        else if (sdiff > 3)
+    		target = difficult_Tbl[1];
+    	else
+    		target = difficult_Tbl[0];
      
         // target
+        //printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@target start......\n");
+        //printf("diff = %.2f\n",sdiff);
         for(i = 0; i < 2; i++)
         {
-            spi_tx[82 + (i * 4) + 0] = (uint8_t)((work->target[27 + 4*i]) & 0xff);
-            spi_tx[82 + (i * 4) + 1] = (uint8_t)((work->target[26 + 4*i]) & 0xff);
-            spi_tx[82 + (i * 4) + 2] = (uint8_t)((work->target[25 + 4*i]) & 0xff);
-            spi_tx[82 + (i * 4) + 3] = (uint8_t)((work->target[24 + 4*i]) & 0xff);    
+            //printf("0x%02x,0x%02x,0x%02x,0x%02x,",work->target[24 + 4*i],work->target[25 + 4*i],work->target[26 + 4*i],work->target[27 + 4*i]);
+            job[82 + (i * 4) + 0] = (uint8_t)((target[3 + 4*i]) & 0xff);
+            job[82 + (i * 4) + 1] = (uint8_t)((target[2 + 4*i]) & 0xff);
+            job[82 + (i * 4) + 2] = (uint8_t)((target[1 + 4*i]) & 0xff);
+            job[82 + (i * 4) + 3] = (uint8_t)((target[0 + 4*i]) & 0xff); 
+
+            //job[82 + (i * 4) + 0] = (uint8_t)((work->target[27 + 4*i]) & 0xff);
+            //job[82 + (i * 4) + 1] = (uint8_t)((work->target[26 + 4*i]) & 0xff);
+            //job[82 + (i * 4) + 2] = (uint8_t)((work->target[25 + 4*i]) & 0xff);
+            //job[82 + (i * 4) + 3] = (uint8_t)((work->target[24 + 4*i]) & 0xff); 
         }
+        //printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@target over......\n");
         
         // end nonce
-        spi_tx[90] = 0xff;
-        spi_tx[91] = 0xff;
-        spi_tx[92] = 0xff;
-        spi_tx[93] = 0xff;
+        job[90] = 0xff;
+        job[91] = 0xff;
+        job[92] = 0xff;
+        job[93] = 0xff;
     
         // crc
         memset(tmp_buf, 0, sizeof(tmp_buf));
         
         for(i = 0; i < 47; i++)
         {
-            tmp_buf[(2 * i) + 1] = spi_tx[(2 * i) + 0];
-            tmp_buf[(2 * i) + 0] = spi_tx[(2 * i) + 1];
+            tmp_buf[(2 * i) + 1] = job[(2 * i) + 0];
+            tmp_buf[(2 * i) + 0] = job[(2 * i) + 1];
         }
         crc = CRC16_2(tmp_buf, 94);
-        spi_tx[94] = (uint8_t)((crc >> 8) & 0xff);
-        spi_tx[95] = (uint8_t)((crc >> 0) & 0xff);
+        job[94] = (uint8_t)((crc >> 8) & 0xff);
+        job[95] = (uint8_t)((crc >> 0) & 0xff);
         
-    memcpy(job,spi_tx,98);
+    //memcpy(job,spi_tx,98);
         return job;
 }
 
@@ -785,7 +900,7 @@ bool set_work(struct A1_chain *a1, uint8_t chip_id, struct work *work, uint8_t q
 bool get_nonce(struct A1_chain *a1, uint8_t *nonce, uint8_t *chip_id, uint8_t *job_id)
 {
     uint8_t buffer[6] = {0};
-    if(mcompat_cmd_read_nonce(a1->chain_id, buffer, 4))
+    if(mcompat_cmd_read_result(a1->chain_id, CMD_ADDR_BROADCAST,buffer, 4))
     {
         *job_id = buffer[0] >> 4;
         *chip_id = buffer[1];
@@ -808,78 +923,40 @@ bool abort_work(struct A1_chain *a1)
     return true;
 }
 
-bool check_chip(struct A1_chain *a1, int i)
+bool check_chip(struct A1_chain *a1, int cid)
 {
-    uint8_t buffer[REG_LENGTH-2] = {0};
-    int chip_id = i + 1;
+    uint8_t buffer[REG_LENGTH] = {0};
+    int chip_id = cid + 1;
 
-    if (!mcompat_cmd_read_register(a1->chain_id, chip_id, buffer, REG_LENGTH-2)) {
+    if (!mcompat_cmd_read_register(a1->chain_id, chip_id, buffer, REG_LENGTH)) {
         applog(LOG_NOTICE, "%d: Failed to read register for ""chip %d -> disabling", a1->chain_id, chip_id);
-        a1->chips[i].num_cores = 0;
-        a1->chips[i].disabled = 1;
+        a1->chips[cid].num_cores = 0;
+        a1->chips[cid].disabled = 1;
         return false;;
     }
 
-    a1->chips[i].num_cores = buffer[11];
-    a1->num_cores += a1->chips[i].num_cores;
-    //applog(LOG_WARNING, "%d: Found chip %d with %d active cores",cid, chip_id, a1->chips[i].num_cores);
+    a1->chips[cid].num_cores = buffer[11];
+    a1->num_cores += a1->chips[cid].num_cores;
 
-    //keep ASIC register value
-    memcpy(a1->chips[i].reg, buffer, REG_LENGTH-2);
-    a1->chips[i].temp= 0x000003ff & ((buffer[7]<<8) | buffer[8]);
+    memcpy(a1->chips[cid].reg, buffer, REG_LENGTH);
+    a1->chips[cid].nVol = mcompat_volt_to_mV(0x3ff & ((buffer[7] << 8) | buffer[8]));
 
-    if (a1->chips[i].num_cores < BROKEN_CHIP_THRESHOLD){
-        applog(LOG_NOTICE, "%d: broken chip %d with %d active ""cores (threshold = %d)",a1->chain_id,chip_id,a1->chips[i].num_cores,BROKEN_CHIP_THRESHOLD);
-        hexdump_error("new.PLL", a1->spi_rx, 8);
-        a1->chips[i].disabled = true;
-        a1->num_cores -= a1->chips[i].num_cores;
+    if (a1->chips[cid].num_cores < BROKEN_CHIP_THRESHOLD){
+        applog(LOG_NOTICE, "%d: broken chip %d with %d active ""cores (threshold = %d)",a1->chain_id,chip_id,a1->chips[cid].num_cores,BROKEN_CHIP_THRESHOLD);
+
+        a1->chips[cid].disabled = true;
+        a1->num_cores -= a1->chips[cid].num_cores;
         return false;
     }
 
-    if (a1->chips[i].num_cores < WEAK_CHIP_THRESHOLD) {
-        applog(LOG_NOTICE, "%d: weak chip %d with %d active ""cores (threshold = %d)",a1->chain_id,chip_id, a1->chips[i].num_cores, WEAK_CHIP_THRESHOLD);
-        hexdump_error("new.PLL", a1->spi_rx, 8);    
+    if (a1->chips[cid].num_cores < WEAK_CHIP_THRESHOLD) {
+        applog(LOG_NOTICE, "%d: weak chip %d with %d active ""cores (threshold = %d)",a1->chain_id,chip_id, a1->chips[cid].num_cores, WEAK_CHIP_THRESHOLD);  
         return false;
     }
-    a1->chips[i].pll = a1->pll;
+    a1->chips[cid].pll = a1->pll;
     return true;
 }
 
-int prechain_detect(struct A1_chain *a1, int idxpll, int lastidx)
-{
-    //uint8_t buffer[64];
-    int cid = a1->chain_id;
-    uint8_t temp_reg[REG_LENGTH-2];
-    int i,nCount = 0;
-    
-     a1->base_pll = idxpll;
-    //usleep(500000);
-    
-    for(i=lastidx; i<idxpll+1; i++)
-    {
-        nCount = 0;
-        memcpy(temp_reg, default_reg_33[i], REG_LENGTH);
-        
-         while(!mcompat_cmd_write_register(a1->chain_id, ADDR_BROADCAST, temp_reg, REG_LENGTH-2))
-         {
-               usleep(200000);
-               nCount++;
-               if(nCount > 5) 
-               {
-                  applog(LOG_ERR, "set default PLL fail");
-                  return -1;
-                }
-          }
-       
-           usleep(20000);
-           a1->pll = i;
-      }
-        
-        applog(LOG_WARNING, "chain %d set default %d PLL success",a1->chain_id, i);
-
-        usleep(500000);
-    return 0;
-}
 
 /*
  * BIST_START works only once after HW reset, on subsequent calls it
@@ -902,82 +979,82 @@ int chain_detect(struct A1_chain *a1)
 //add 0922
 void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
 {
- unsigned char tmp_reg[REG_LENGTH-2] = {0};
- unsigned char src_reg[REG_LENGTH-2] = {0};
- unsigned char reg[REG_LENGTH-2] = {0};
+ unsigned char tmp_reg[REG_LENGTH_SG] = {0};
+ unsigned char src_reg[REG_LENGTH_SG] = {0};
+ unsigned char reg[REG_LENGTH_SG] = {0};
 
-    mcompat_cmd_read_register(a1->chain_id, 0x01, reg, REG_LENGTH-2);
-    memcpy(src_reg, reg, REG_LENGTH-2);
-    mcompat_cmd_write_register(a1->chain_id, chip_id, src_reg, REG_LENGTH-2);
+    mcompat_cmd_read_register(a1->chain_id, 0x01, reg, REG_LENGTH_SG);
+    memcpy(src_reg, reg, REG_LENGTH_SG);
+    mcompat_cmd_write_register(a1->chain_id, chip_id, src_reg, REG_LENGTH_SG);
     usleep(200);
 
  if(is_tsensor)//configure for tsensor
  {
     reg[7] = (src_reg[7]&0x7f);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
     //hexdump("write reg", tmp_reg, REG_LENGTH);
-        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
     reg[7] = (src_reg[7]|0x80);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
   
 
     reg[6] = (src_reg[6]|0x04);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg,REG_LENGTH_SG);
     usleep(200);
 
     //Step6: high tsadc_en
     reg[7] = (src_reg[7]|0x20);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-  	mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+  	mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
 
     //Step7: tsadc_ana_reg_9 = 0;tsadc_ana_reg_8  = 0
     reg[5] = (src_reg[5]&0xfc);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-  	mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+  	mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
     
     //Step8: tsadc_ana_reg_7 = 1;tsadc_ana_reg_1 = 0
     reg[6] = (src_reg[6]&0x7d);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
   }else{//configure for vsensor
    reg[7] = (src_reg[7]&0x7f);
-   memcpy(tmp_reg,reg,REG_LENGTH-2);
+   memcpy(tmp_reg,reg,REG_LENGTH_SG);
 
-        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
    usleep(200);
    reg[7] = (src_reg[7]|0x80);
-   memcpy(tmp_reg,reg,REG_LENGTH-2);
-        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+   memcpy(tmp_reg,reg,REG_LENGTH_SG);
+        mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
    usleep(200);
 
     reg[6] = (src_reg[6]|0x04);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
 
     //Step6: high tsadc_en
     reg[7] = (src_reg[7]|0x20);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
 
     //Step7: tsadc_ana_reg_9 = 0;tsadc_ana_reg_8  = 0
     reg[5] = ((src_reg[5]|0x01)&0xfd);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
     
     //Step8: tsadc_ana_reg_7 = 1;tsadc_ana_reg_1 = 0
     reg[6] = ((src_reg[6]|0x02)&0x7f);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH-2);
+    memcpy(tmp_reg,reg,REG_LENGTH_SG);
+    mcompat_cmd_write_register(a1->chain_id,chip_id,tmp_reg, REG_LENGTH_SG);
     usleep(200);
   }
 }
@@ -1013,41 +1090,20 @@ int inno_get_voltage_stats(struct A1_chain *a1, inno_reg_ctrl_t *s_reg_ctrl)
 
 bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg_ctrl)
 {
-    uint8_t reg[REG_LENGTH-2] = {0};
+    uint8_t reg[REG_LENGTH_SG] = {0};
   
-    if (!mcompat_cmd_read_register(a1->chain_id, chip_id, reg, REG_LENGTH-2)) {
+    if (!mcompat_cmd_read_register(a1->chain_id, chip_id, reg, REG_LENGTH_SG)) {
         applog(LOG_NOTICE, "%d: Failed to read register for ""chip %d -> disabling", a1->chain_id, chip_id);
         a1->chips[chip_id].num_cores = 0;
         a1->chips[chip_id].disabled = 1;
         return false;
     }else{
-            usleep(2000);
-            uint32_t rd_v = 0;
-            rd_v = 0x000003ff & ((reg[7] << 8) | reg[8]);
-            float tmp_v = (float)(rd_v * MUL_COEF)/1024;
-            a1->chips[chip_id-1].nVol = tmp_v *1000; 
-            s_reg_ctrl->stat_val[a1->chain_id][chip_id-1] = a1->chips[chip_id-1].nVol;
-            
-            nReadVolTimes++;
-                        
-            if((tmp_v > 0.58) || (tmp_v < 0.45)){
-                nVolTotal++;
-                applog(LOG_ERR,"read tmp %f/%d form chain %d,chip %d,nVolTotal=%d\n",tmp_v,rd_v,a1->chain_id, chip_id,nVolTotal);
-            }
-            //applog(LOG_ERR,"nReadVolTimes = %d,nVolTotal = %d",nReadVolTimes,nVolTotal);
-            
-            if(nVolTotal >= 3){
-                applog(LOG_ERR,"Notice chain %d  chip %d maybe has some promble in voltage,nVolTotal=%d\n",a1->chain_id,chip_id,nVolTotal);
-                nVolTotal = 0;
-                nReadVolTimes = 0;
-            	mcompat_chain_power_down(a1->chain_id);
-                early_quit(1,"Notice chain %d maybe has some promble in voltage\n",a1->chain_id);
-            }
-            if(nReadVolTimes == 3){
-                nReadVolTimes = 0;
-                nVolTotal = 0;
-            }
-            
+        usleep(2000);
+        uint32_t rd_v = 0;
+        rd_v = 0x000003ff & ((reg[7] << 8) | reg[8]);
+        float tmp_v = (float)(rd_v * MUL_COEF)/1024;
+        a1->chips[chip_id-1].nVol = tmp_v *1000; 
+        s_reg_ctrl->stat_val[a1->chain_id][chip_id-1] = a1->chips[chip_id-1].nVol;     
    }
     return true;
 }

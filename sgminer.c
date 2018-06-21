@@ -105,23 +105,16 @@ uint32_t opt_A1Pll8=1100; // -1 Default
 
 #endif
 
-int opt_voltage = 12;
+int opt_voltage[ASIC_CHAIN_NUM] = {CHIP_VID_RUN, CHIP_VID_RUN, CHIP_VID_RUN,
+								   CHIP_VID_RUN, CHIP_VID_RUN, CHIP_VID_RUN};
 
-int opt_voltage1 = 12;
-int opt_voltage2 = 12;
-int opt_voltage3 = 12;
-int opt_voltage4 = 12;
-int opt_voltage5 = 12;
-int opt_voltage6 = 12;
-int opt_voltage7 = 12;
-int opt_voltage8 = 12;
 
 
 mcompat_fan_temp_s *fan_temp_ctrl;
 mcompat_temp_s *tmp_ctrl;
 
 int g_auto_fan = 1; 
-int g_fan_speed = 1;
+int g_fan_speed = -1;
 
 
 static char packagename[256];
@@ -390,7 +383,7 @@ static int include_count;
 #define JSON_MAX_DEPTH 10
 #define JSON_MAX_DEPTH_ERR "Too many levels of JSON includes (limit 10) or a loop"
 #define JSON_WEB_ERROR "WEB config err"
-#define TEMP_UPDATE_INT_MS  10000
+#define TEMP_UPDATE_INT_MS  5000
 
 
 #if defined(unix) || defined(__APPLE__)
@@ -1213,33 +1206,25 @@ static struct opt_table opt_config_table[] = {
 
     // for G9
     OPT_WITH_ARG("--A1Vol",
-             set_int_0_to_31, opt_show_intval, &opt_voltage,
+             set_int_0_to_31, opt_show_intval, &opt_voltage[0],
              "set voltage (1 ~ 31)"),
     // for G19
     OPT_WITH_ARG("--A1Vol1",
-             set_int_0_to_31, opt_show_intval, &opt_voltage1,
+             set_int_0_to_31, opt_show_intval, &opt_voltage[1],
              "set voltage (1 ~ 31)"),
     OPT_WITH_ARG("--A1Vol2",
-             set_int_0_to_31, opt_show_intval, &opt_voltage2,
+             set_int_0_to_31, opt_show_intval, &opt_voltage[2],
              "set voltage (1 ~ 31)"),
     OPT_WITH_ARG("--A1Vol3",
-             set_int_0_to_31, opt_show_intval, &opt_voltage3,
+             set_int_0_to_31, opt_show_intval, &opt_voltage[3],
              "set voltage (1 ~ 31)"),
     OPT_WITH_ARG("--A1Vol4",
-             set_int_0_to_31, opt_show_intval, &opt_voltage4,
+             set_int_0_to_31, opt_show_intval, &opt_voltage[4],
              "set voltage (1 ~ 31)"),
     OPT_WITH_ARG("--A1Vol5",
-             set_int_0_to_31, opt_show_intval, &opt_voltage5,
+             set_int_0_to_31, opt_show_intval, &opt_voltage[5],
              "set voltage (1 ~ 31)"),
-    OPT_WITH_ARG("--A1Vol6",
-             set_int_0_to_31, opt_show_intval, &opt_voltage6,
-             "set voltage (1 ~ 31)"),
-    OPT_WITH_ARG("--A1Vol7",
-             set_int_0_to_31, opt_show_intval, &opt_voltage7,
-             "set voltage (1 ~ 31)"),
-    OPT_WITH_ARG("--A1Vol8",
-             set_int_0_to_31, opt_show_intval, &opt_voltage8,
-             "set voltage (1 ~ 31)"),
+             
 #if 1
     OPT_WITH_ARG("--A1Fanspd",
              set_int_0_to_100, opt_show_intval, &g_fan_speed,
@@ -8696,6 +8681,24 @@ static void *watchpool_thread(void __maybe_unused *userdata)
             switch_pools(NULL);
         }
 
+         static int64_t last_share_nonce = -1;
+         static int  last_temp_time = 0;
+        
+         if (last_temp_time + 100*TEMP_UPDATE_INT_MS < get_current_ms())
+         {
+            if(last_share_nonce == total_accepted)
+            {
+               applog(LOG_ERR,"!!!!!!!!!!!!!!!!!!!!NetWork Bad,exit(mcompat_chain_power_down_all())!!!!!!!!!!!!!!!!!\n");
+               mcompat_chain_power_down_all();
+               applog(LOG_ERR,"mcompat_chain_power_down_all %d,%d",(uint32_t)last_share_nonce,(uint32_t)total_accepted);
+               early_quit(1, "Long Time No Share");
+            }
+            last_share_nonce = total_accepted;
+            last_temp_time = get_current_ms();
+            
+         }
+        
+
         cgsleep_ms(30000);
 
     }
@@ -9656,10 +9659,6 @@ int main(int argc, char *argv[])
     unsigned int k;
     char *s;
 
-    fan_temp_ctrl = malloc(sizeof(*fan_temp_ctrl));
-    tmp_ctrl = malloc(ASIC_CHAIN_NUM * sizeof(*tmp_ctrl));
-    fan_temp_ctrl->mcompat_temp = tmp_ctrl;
-
     /* This dangerous functions tramples random dynamically allocated
      * variables so do it before anything at all */
     if (unlikely(curl_global_init(CURL_GLOBAL_ALL))){
@@ -9712,7 +9711,7 @@ int main(int argc, char *argv[])
     /* We use the getq mutex as the staged lock */
     stgd_lock = &getq->mutex;
 
-    initialise_usb();
+    //initialise_usb();
 
     snprintf(packagename, sizeof(packagename), "%s %s", PACKAGE, VERSION);
 
@@ -9842,18 +9841,84 @@ int main(int argc, char *argv[])
 
     gwsched_thr_id = 0;
 
-#ifdef USE_USBUTILS
-    usb_initialise();
+    sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_A5, ASIC_CHAIN_NUM, ASIC_CHIP_NUM);
+    sys_platform_debug_init(3);
+    mcompat_chain_power_down_all();
 
-    // before device detection
-    cgsem_init(&usb_resource_sem);
-    usbres_thr_id = 1;
-    thr = &control_thr[usbres_thr_id];
-    if (thr_info_create(thr, NULL, usb_resource_thread, thr)){
-        early_quit(1, "usb resource thread create failed");
-    }
-    pthread_detach(thr->pth);
+    if (!total_pools) {
+            applog(LOG_WARNING, "Need to specify at least one pool server.");
+#ifdef HAVE_CURSES
+            if (!use_curses || !input_pool(false))
 #endif
+                early_quit(1, "Pool setup failed");
+        }
+    
+        for (i = 0; i < total_pools; i++) {
+            struct pool *pool = pools[i];
+            size_t siz;
+    
+            pool->sgminer_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
+            pool->sgminer_pool_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
+    
+            if (!pool->rpc_userpass) {
+                if (!pool->rpc_user || !pool->rpc_pass)
+                    early_quit(1, "No login credentials supplied for pool %u %s", i, pool->rpc_url);
+                siz = strlen(pool->rpc_user) + strlen(pool->rpc_pass) + 2;
+                pool->rpc_userpass = malloc(siz);
+                if (!pool->rpc_userpass)
+                    early_quit(1, "Failed to malloc userpass");
+                snprintf(pool->rpc_userpass, siz, "%s:%s", pool->rpc_user, pool->rpc_pass);
+            }
+        }
+        /* Set the currentpool to pool 0 */
+        currentpool = pools[0];
+
+
+    for (i = 0; i < total_pools; i++) {
+        struct pool *pool  = pools[i];
+
+        enable_pool(pool);
+        pool->idle = true;
+    }
+
+
+    /* Look for at least one active pool before starting */
+    applog(LOG_NOTICE, "Probing for an alive pool");
+    probe_pools();
+    do {
+        sleep(1);
+        slept++;
+    } while (!pools_active && slept < 60);
+
+    while (!pools_active) {
+        if (!pool_msg) {
+            applog(LOG_ERR, "No servers were found that could be used to get work from.");
+            applog(LOG_ERR, "Please check the details from the list below of the servers you have input");
+            applog(LOG_ERR, "Most likely you have input the wrong URL, forgotten to add a port, or have not set up workers");
+            for (i = 0; i < total_pools; i++) {
+                struct pool *pool = pools[i];
+
+                applog(LOG_WARNING, "total pools: %d,Pool: %d  URL: %s  User: %s  Password: %s",
+                total_pools,i, pool->rpc_url, pool->rpc_user, pool->rpc_pass);
+            }
+            pool_msg = true;
+            if (use_curses)
+                applog(LOG_ERR, "Press any key to exit, or sgminer will wait indefinitely for an alive pool.");
+        }
+        if (!use_curses)
+        {
+            mcompat_chain_power_down_all();
+            early_quit(0, "No servers could be used! Exiting.");
+        }   
+#ifdef HAVE_CURSES
+        touchwin(logwin);
+        wrefresh(logwin);
+        halfdelay(10);
+        if (getch() != ERR)
+            early_quit(0, "No servers could be used! Exiting.");
+        cbreak();
+#endif
+    };
 
     /* Use the DRIVER_PARSE_COMMANDS macro to fill all the device_drvs */
     DRIVER_PARSE_COMMANDS(DRIVER_FILL_DEVICE_DRV)
@@ -9904,33 +9969,6 @@ int main(int argc, char *argv[])
 #endif
     }
 
-    if (!total_pools) {
-        applog(LOG_WARNING, "Need to specify at least one pool server.");
-#ifdef HAVE_CURSES
-        if (!use_curses || !input_pool(false))
-#endif
-            early_quit(1, "Pool setup failed");
-    }
-
-    for (i = 0; i < total_pools; i++) {
-        struct pool *pool = pools[i];
-        size_t siz;
-
-        pool->sgminer_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
-        pool->sgminer_pool_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
-
-        if (!pool->rpc_userpass) {
-            if (!pool->rpc_user || !pool->rpc_pass)
-                early_quit(1, "No login credentials supplied for pool %u %s", i, pool->rpc_url);
-            siz = strlen(pool->rpc_user) + strlen(pool->rpc_pass) + 2;
-            pool->rpc_userpass = malloc(siz);
-            if (!pool->rpc_userpass)
-                early_quit(1, "Failed to malloc userpass");
-            snprintf(pool->rpc_userpass, siz, "%s:%s", pool->rpc_user, pool->rpc_pass);
-        }
-    }
-    /* Set the currentpool to pool 0 */
-    currentpool = pools[0];
 
 #ifdef HAVE_SYSLOG_H
     if (use_syslog)
@@ -9984,51 +10022,6 @@ int main(int argc, char *argv[])
 
     if (opt_benchmark || opt_benchfile)
         goto begin_bench;
-
-    for (i = 0; i < total_pools; i++) {
-        struct pool *pool  = pools[i];
-
-        enable_pool(pool);
-        pool->idle = true;
-    }
-
-    /* Look for at least one active pool before starting */
-    applog(LOG_NOTICE, "Probing for an alive pool");
-    probe_pools();
-    do {
-        sleep(1);
-        slept++;
-    } while (!pools_active && slept < 60);
-
-    while (!pools_active) {
-        if (!pool_msg) {
-            applog(LOG_ERR, "No servers were found that could be used to get work from.");
-            applog(LOG_ERR, "Please check the details from the list below of the servers you have input");
-            applog(LOG_ERR, "Most likely you have input the wrong URL, forgotten to add a port, or have not set up workers");
-            for (i = 0; i < total_pools; i++) {
-                struct pool *pool = pools[i];
-
-                applog(LOG_WARNING, "total pools: %d,Pool: %d  URL: %s  User: %s  Password: %s",
-                total_pools,i, pool->rpc_url, pool->rpc_user, pool->rpc_pass);
-            }
-            pool_msg = true;
-            if (use_curses)
-                applog(LOG_ERR, "Press any key to exit, or sgminer will wait indefinitely for an alive pool.");
-        }
-        if (!use_curses)
-        {
-            mcompat_chain_power_down_all();
-            early_quit(0, "No servers could be used! Exiting.");
-        }   
-#ifdef HAVE_CURSES
-        touchwin(logwin);
-        wrefresh(logwin);
-        halfdelay(10);
-        if (getch() != ERR)
-            early_quit(0, "No servers could be used! Exiting.");
-        cbreak();
-#endif
-    };
 
 begin_bench:
     total_mhashes_done = 0;
@@ -10092,16 +10085,8 @@ begin_bench:
     while (42) {
         int ts, max_staged = max_queue;
         struct pool *pool, *cp;
-        bool lagging = false;
-        static int  last_temp_time = 0;
+        bool lagging = false;     
 
-       if (last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
-       {
-            mcompat_fan_speed_update_hub(fan_temp_ctrl);
-            last_temp_time = get_current_ms();
-       }
-
-        //
         if(g_reset_delay != 0xffff)
         {
             applog(LOG_INFO, "powerdown for api commond");
@@ -10182,6 +10167,7 @@ retry:
             continue;
         }
 
+#if 0
         if (opt_benchfile) {
             get_benchfile_work(work);
             applog(LOG_DEBUG, "Generated benchfile work");
@@ -10193,7 +10179,7 @@ retry:
             stage_work(work);
             continue;
         }
-
+#endif
 #ifdef HAVE_LIBCURL
         struct curl_ent *ce;
 
