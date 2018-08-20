@@ -704,6 +704,7 @@ static uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
         job[80] = (uint8_t)((work->data[78]) & 0xff);
         job[81] = (uint8_t)((work->data[79]) & 0xff);
 
+#if 0
     	if (sdiff>63)		
     		target = difficult_Tbl[5];
     	else if (sdiff>31)
@@ -715,7 +716,9 @@ static uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
         else if (sdiff > 3)
     		target = difficult_Tbl[1];
     	else
-    		target = difficult_Tbl[0];
+		    target = difficult_Tbl[0];
+#endif
+
      
         // target
         //printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@target start......\n");
@@ -723,15 +726,15 @@ static uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
         for(i = 0; i < 2; i++)
         {
             //printf("0x%02x,0x%02x,0x%02x,0x%02x,",work->target[24 + 4*i],work->target[25 + 4*i],work->target[26 + 4*i],work->target[27 + 4*i]);
-            job[82 + (i * 4) + 0] = (uint8_t)((target[3 + 4*i]) & 0xff);
-            job[82 + (i * 4) + 1] = (uint8_t)((target[2 + 4*i]) & 0xff);
-            job[82 + (i * 4) + 2] = (uint8_t)((target[1 + 4*i]) & 0xff);
-            job[82 + (i * 4) + 3] = (uint8_t)((target[0 + 4*i]) & 0xff); 
+            //job[82 + (i * 4) + 0] = (uint8_t)((target[3 + 4*i]) & 0xff);
+            //job[82 + (i * 4) + 1] = (uint8_t)((target[2 + 4*i]) & 0xff);
+            //job[82 + (i * 4) + 2] = (uint8_t)((target[1 + 4*i]) & 0xff);
+            //job[82 + (i * 4) + 3] = (uint8_t)((target[0 + 4*i]) & 0xff); 
 
-            //job[82 + (i * 4) + 0] = (uint8_t)((work->target[27 + 4*i]) & 0xff);
-            //job[82 + (i * 4) + 1] = (uint8_t)((work->target[26 + 4*i]) & 0xff);
-            //job[82 + (i * 4) + 2] = (uint8_t)((work->target[25 + 4*i]) & 0xff);
-            //job[82 + (i * 4) + 3] = (uint8_t)((work->target[24 + 4*i]) & 0xff); 
+            job[82 + (i * 4) + 0] = (uint8_t)((work->target[27 + 4*i]) & 0xff);
+            job[82 + (i * 4) + 1] = (uint8_t)((work->target[26 + 4*i]) & 0xff);
+            job[82 + (i * 4) + 2] = (uint8_t)((work->target[25 + 4*i]) & 0xff);
+            job[82 + (i * 4) + 3] = (uint8_t)((work->target[24 + 4*i]) & 0xff); 
         }
         //printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@target over......\n");
         

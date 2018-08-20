@@ -24,7 +24,7 @@
 
 #define CHIP57_VID_DEF          (3)
 #define CHIP33_VID_DEF          (8)
-#define CHIP_VID_RUN            (12)
+#define CHIP_VID_RUN            (10)
 #define SPI_SPEED_RUN			(SPI_SPEED_6250K)
 #define PLL_LV_NUM				(119)
 #define CHAIN_DEAD_TIME			(600)

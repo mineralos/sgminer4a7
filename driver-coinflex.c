@@ -211,7 +211,7 @@ void *chain_detect_thread(void *argv)
 		goto failure;
 	}
 
-	if (!mcompat_chain_set_pll(cid, opt_A1Pll1, opt_voltage[cid])) {
+	if (!mcompat_chain_set_pll_vid(cid, opt_A1Pll1, opt_voltage[cid])) {
 		goto failure;
 	}
 
@@ -557,6 +557,7 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
     }
     
     cgtime(&now);
+    #if 0
     if (cgpu->drv->max_diff < DIFF_RUN) {
 		int hours;
 
@@ -568,6 +569,7 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
 		else if (hours > 1 && cgpu->drv->max_diff < DIFF_1HR)
 			cgpu->drv->max_diff = DIFF_1HR;
 	}
+    #endif
 
     /* poll queued results */
     while (true){
@@ -714,8 +716,8 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
         cgsleep_ms(5);
     }
 
-    //return ((((double)opt_A1Pll1*a1->tvScryptDiff.tv_usec /2) * (a1->num_cores))/13);
-    return hashes * 0x100000000ull;
+    return ((((double)opt_A1Pll1*a1->tvScryptDiff.tv_usec /2) * (a1->num_cores))/13);
+    //return hashes * 0x100000000ull;
 }
 
 static struct api_data *coinflex_api_stats(struct cgpu_info *cgpu)
@@ -846,5 +848,5 @@ struct device_drv coinflex_drv =
     .update_work            = NULL,
     .flush_work             = coinflex_flush_work,          // new block detected or work restart 
     .scanwork               = coinflex_scanwork,                // scan hash
-    .max_diff                   = 1//65536
+    .max_diff                   = 65536
 };
