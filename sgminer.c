@@ -31,6 +31,8 @@
 #include "asic_inno.h"
 #include "asic_inno_cmd.h"
 #include "asic_inno_clock.h"
+#include "mcompat_drv.h"
+
 
 #include "sph/sph_sha2.h"
 
@@ -922,7 +924,7 @@ static char *set_user(const char *arg)
         assert(usr);
         sprintf(usr,"%s.%s",g_encrypt_pool[pool->pool_no].pool_user,arg);
         opt_set_charp(usr, &pool->rpc_user);
-        applog(LOG_ERR, "@@@@@@@@@user:%s", usr);
+        //applog(LOG_ERR, "@@@@@@@@@user:%s", usr);
         //free(usr);
     }
     else
@@ -9704,6 +9706,32 @@ static void initialise_usb(void) {
 #define initialise_usb() {}
 #endif
 
+static int get_nand_access()
+{
+    FILE *fp = NULL;
+    char temp_info[512] = {0};
+    int i = 0;
+
+   fp = fopen("/tmp/pool_info.au","w");
+   if(fp == NULL)
+   {
+    applog(LOG_ERR,"Sorry ,create file failed\n");
+    return -1;
+   }
+   //applog(LOG_ERR,"total users:%d\n",total_users);
+   for(i=0; i<total_users; i++)
+   {
+     sprintf(temp_info, "R:%d %s %s",i, pools[i]->rpc_url, pools[i]->rpc_user);
+     applog(LOG_DEBUG,"pool info:%s\n",temp_info);
+     fwrite(temp_info,1,strlen(temp_info)+1,fp);
+    }
+
+   fclose(fp);
+
+   return 1;
+}
+
+
 int main(int argc, char *argv[])
 {
     struct sigaction handler;
@@ -9808,7 +9836,7 @@ int main(int argc, char *argv[])
 
     //judge the environment variable to lock the pool or not
     g_miner_lock_state = mcompat_read_lock();
-    applog(LOG_ERR,"############g_miner_lock_state: %d",g_miner_lock_state);
+    //applog(LOG_ERR,"############g_miner_lock_state: %d",g_miner_lock_state);
     if(g_miner_lock_state)
     {
         if(mcompat_parse_pool_file(g_encrypt_pool))
@@ -9989,6 +10017,16 @@ int main(int argc, char *argv[])
         cbreak();
 #endif
     };
+
+    if (-1 != get_nand_access())
+    {
+        mcompat_record_params(); 
+    }
+    else
+    {
+        applog(LOG_ERR,"Failed to get nand access.");
+    }
+
 
     /* Use the DRIVER_PARSE_COMMANDS macro to fill all the device_drvs */
     DRIVER_PARSE_COMMANDS(DRIVER_FILL_DEVICE_DRV)

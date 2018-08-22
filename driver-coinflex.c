@@ -532,6 +532,7 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
     uint8_t chip_id;
     uint8_t job_id;
     bool work_updated = false;
+    static int tries[8] = {0};
     struct timeval now;
 
     if (a1->num_cores == 0) 
@@ -609,17 +610,29 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
         chip->nonces_found++;
         hashes += work->device_diff;
 		a1->lastshare = now.tv_sec;
+        tries[cid] = 0;
     }
 
-    if (unlikely(now.tv_sec - a1->lastshare > CHAIN_DEAD_TIME)) {
-		applog(LOG_EMERG, "chain %d not producing shares for more than %d mins, shutting down.",
-		       cid, CHAIN_DEAD_TIME / 60);
-		// TODO: should restart current chain only
-		/* Exit cgminer, allowing systemd watchdog to restart */
-		for (i = 0; i < ASIC_CHAIN_NUM; ++i)
-			mcompat_chain_power_down(cid);
-		exit(1);
+    if ((now.tv_sec - a1->lastshare) > CHAIN_DEAD_TIME)
+    {
+        a1->lastshare = now.tv_sec;
+        tries[cid]++;
+		applog(LOG_ERR, "A5/A5+ chain %d not producing nounce for more than %d mins",
+		       cid, (tries[cid]*CHAIN_DEAD_TIME / 60));
+        if(!mcompat_cmd_resetjob(cid, CMD_ADDR_BROADCAST, reg))
+        {
+            applog(LOG_ERR, "(not share)chain:%d spi hub reset failed",cid);
+        }
+        if (tries[cid] == 4)
+        {
+           tries[cid] == 0;
+           mcompat_chain_power_down_all();
+           sleep(5);
+		   quit(1, "A5/A5+ chain %d not producing nounce for more than %d mins,all chains power down",
+                 cid, (tries[cid]*CHAIN_DEAD_TIME / 60));
+        }
 	}
+
 
     /* check for completed works */
     if(a1->work_start_delay > 0)
