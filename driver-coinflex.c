@@ -141,7 +141,10 @@ static bool wq_enqueue(struct work_queue *wq, struct work *work)
         return false;
 
     struct work_ent *we = malloc(sizeof(*we));
-    assert(we != NULL);
+    //assert(we != NULL);
+    if(we == NULL){
+        applog(LOG_ERR,"malloc failed in wq_enqueue function!\n");
+    }
 
     we->work = work;
     INIT_LIST_HEAD(&we->head);
@@ -201,7 +204,10 @@ void *chain_detect_thread(void *argv)
 	}
 
 	struct A1_chain *a1 = malloc(sizeof(*a1));
-	assert(a1 != NULL);
+	//assert(a1 != NULL);
+	if(a1 == NULL){
+        applog(LOG_ERR,"a1 malloc failed at chain_detect_thread function!\n");
+    }
 	memset(a1, 0, sizeof(struct A1_chain));
 
 	cid = g_chain_id[chain_id];
@@ -221,7 +227,10 @@ void *chain_detect_thread(void *argv)
 
 	a1->num_active_chips = a1->num_chips;
 	a1->chips = calloc(a1->num_active_chips, sizeof(struct A1_chip));
-    assert (a1->chips != NULL);
+    //assert (a1->chips != NULL);
+    if (a1->chips == NULL){
+        applog(LOG_ERR,"a1->chips malloc failed at chain_detect_thread function!\n");
+    }
 
 	mcompat_configure_tvsensor(cid, CMD_ADDR_BROADCAST, 0);
 	usleep(1000);
@@ -280,7 +289,10 @@ static bool A5_chain_detect()
             continue;
 
         struct cgpu_info *cgpu = malloc(sizeof(*cgpu));
-        assert(cgpu != NULL);
+        //assert(cgpu != NULL);
+        if (cgpu == NULL){
+            applog(LOG_ERR,"cgpu malloc failed at A5_chain_detect function!\n");
+        }
         memset(cgpu, 0, sizeof(*cgpu));
 
         cgpu->drv = &coinflex_drv;
@@ -416,7 +428,10 @@ static void coinflex_flush_work(struct cgpu_info *coinflex)
     while (a1->active_wq.num_elems > 0) 
     {
         struct work *work = wq_dequeue(&a1->active_wq);
-        assert(work != NULL);
+        //assert(work != NULL);
+        if (work == NULL){
+            applog(LOG_ERR,"work malloc failed at coinflex_flush_work function!\n");
+        }
         work_completed(coinflex, work);
     }
     mutex_unlock(&a1->lock);
