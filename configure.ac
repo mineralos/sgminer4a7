@@ -208,6 +208,29 @@ fi
 
 AM_CONDITIONAL([WANT_STATIC_LIBUSB], [test x$dlibusb = xno])
 
+# Hardware SOC is in used
+hardware_soc="no"
+
+AC_ARG_WITH([hardware_soc],
+       [AC_HELP_STRING([--use-hardware_soc],[Compile support for Hardware SOC ])],
+       [hardware_soc=$enableval]
+       )
+
+if test "x$hardware_soc" = xyes; then
+       AC_DEFINE([USE_HARDWARE_SOC], [1], [Defined to 1 if Hardware SOC used])
+fi
+
+
+
+AC_ARG_WITH([hardware_soc],
+       [AC_HELP_STRING([--use-hardware_soc],[Compile support for Hardware SOC ])],
+       [hardware_soc=$enableval]
+       )
+
+if test "x$hardware_soc" = xyes; then
+       AC_DEFINE([USE_HARDWARE_SOC], [1], [Defined to 1 if Hardware SOC used])
+fi
+
 djansson="yes"
 case $target in
 	*-*-freebsd*)
