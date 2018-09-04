@@ -15,18 +15,25 @@
 
 
 #define ASIC_CHAIN_NUM          6
-#define ASIC_CHIP_NUM           33
+
+#ifdef USE_D1578_PLL
+#define CHIP_VID_RUN            (3)
+#define PLL_LV_NUM				(359)
+#define ASIC_CHIP_NUM           (57)
+#define ASIC_CORE_NUM           (6)
+#else
+#define CHIP_VID_RUN            (10)
+#define PLL_LV_NUM				(119)
+#define ASIC_CHIP_NUM           (33)
 #define ASIC_CORE_NUM           (8)
+#endif
 #define MAX_CHIP_NUM            (ASIC_CHIP_NUM)
 #define MAX_CORES               (MAX_CHIP_NUM * ASIC_CORE_NUM)
 
-
-
 #define CHIP57_VID_DEF          (3)
 #define CHIP33_VID_DEF          (8)
-#define CHIP_VID_RUN            (10)
+
 #define SPI_SPEED_RUN			(SPI_SPEED_6250K)
-#define PLL_LV_NUM				(119)
 #define CHAIN_DEAD_TIME			(600)
 
 

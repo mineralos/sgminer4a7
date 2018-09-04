@@ -220,15 +220,16 @@ if test "x$hardware_soc" = xyes; then
        AC_DEFINE([USE_HARDWARE_SOC], [1], [Defined to 1 if Hardware SOC used])
 fi
 
+#d1578 PLL Config
+d1578_pll_config="no"
 
-
-AC_ARG_WITH([hardware_soc],
-       [AC_HELP_STRING([--use-hardware_soc],[Compile support for Hardware SOC ])],
-       [hardware_soc=$enableval]
+AC_ARG_WITH([d1578_pll_config],
+       [AC_HELP_STRING([--use-d1578_pll_config],[Compile support for D1578 chip PLL Config])],
+       [d1578_pll_config=$enableval]
        )
 
-if test "x$hardware_soc" = xyes; then
-       AC_DEFINE([USE_HARDWARE_SOC], [1], [Defined to 1 if Hardware SOC used])
+if test "x$d1578_pll_config" = xyes; then
+       AC_DEFINE([USE_D1578_PLL], [1], [Defined to 1 if D1578 chip used])
 fi
 
 djansson="yes"
