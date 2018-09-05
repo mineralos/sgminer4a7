@@ -398,6 +398,12 @@ static void coinflex_flush_work(struct cgpu_info *coinflex)
   //      applog(LOG_ERR, "%d: failed to abort work in chip chain!", cid);
   //  }
     /* flush the work chips were currently hashing */
+
+    if(!mcompat_cmd_resetjob(a1->chain_id, ADDR_BROADCAST, buffer))
+    {
+        applog(LOG_WARNING, "chip %d clear work failed", i); 
+    }
+
     for (i = 0; i < a1->num_active_chips; i++) 
     {
         int j;
@@ -595,12 +601,12 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
 
         work_updated = true;
         if (chip_id < 1 || chip_id > a1->num_active_chips) {
-            applog(LOG_WARNING, "%d: wrong chip_id %d", cid, chip_id);
+            applog(LOG_ERR, "%d: wrong chip_id %d", cid, chip_id);
             continue;
         }
 
         if (job_id < 1 || job_id > 4){
-            applog(LOG_WARNING, "%d: chip %d: result has wrong ""job_id %d", cid, chip_id, job_id);
+            applog(LOG_ERR, "%d: chip %d: result has wrong ""job_id %d", cid, chip_id, job_id);
             continue;
         }
 
@@ -620,8 +626,7 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
             continue;
         }
 
-        applog(LOG_INFO, "Got nonce for chain %d / chip %d / job_id %d", a1->chain_id, chip_id, job_id);
-
+        //applog(LOG_INFO, "Got nonce for chain %d / chip %d / job_id %d", a1->chain_id, chip_id, job_id);
         chip->nonces_found++;
         hashes += work->device_diff;
 		a1->lastshare = now.tv_sec;
@@ -744,8 +749,8 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
         cgsleep_ms(5);
     }
 
-    return ((((double)opt_A1Pll1*a1->tvScryptDiff.tv_usec /2) * (a1->num_cores))/13);
-    //return hashes * 0x100000000ull;
+    //return ((((double)opt_A1Pll1*a1->tvScryptDiff.tv_usec /2) * (a1->num_cores))/13);
+    return hashes * 0x100000000ull;
 }
 
 static struct api_data *coinflex_api_stats(struct cgpu_info *cgpu)
@@ -876,5 +881,5 @@ struct device_drv coinflex_drv =
     .update_work            = NULL,
     .flush_work             = coinflex_flush_work,          // new block detected or work restart 
     .scanwork               = coinflex_scanwork,                // scan hash
-    .max_diff                   = 65536
+    .max_diff               = 1//65536
 };

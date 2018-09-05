@@ -9979,7 +9979,6 @@ int main(int argc, char *argv[])
     gwsched_thr_id = 0;
 
     #ifdef USE_HARDWARE_SOC
-    //#if 1
         applog(LOG_ERR,"################register soc hub....\n");
         sys_platform_init(PLATFORM_SOC_HUB, MCOMPAT_LIB_MINER_TYPE_A5, ASIC_CHAIN_NUM, ASIC_CHIP_NUM);
     #else
