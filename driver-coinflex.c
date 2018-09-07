@@ -221,7 +221,8 @@ void *chain_detect_thread(void *argv)
 		goto failure;
 	}
 
-	if (!mcompat_chain_init(cid, SPI_SPEED_RUN, false)) {
+    //bistmask
+	if (!mcompat_chain_init(cid, SPI_SPEED_RUN, true)) {
 		goto failure;
 	}
 
@@ -344,8 +345,14 @@ static void coinflex_detect(bool __maybe_unused hotplug)
     fan_cfg.preheat = false;        // disable preheat
     fan_cfg.fan_mode = g_auto_fan;
     fan_cfg.fan_speed = g_fan_speed;
+    #if 0
+    fan_cfg.fan_speed_target = 100;//fan speed 100%
+    mcompat_fanctrl_set_bypass(true);
+    #else
     fan_cfg.fan_speed_target = 50;
+    #endif
     mcompat_fanctrl_init(&fan_cfg);
+
     pthread_t tid;
     pthread_create(&tid, NULL, mcompat_fanctrl_thread, NULL);
 
