@@ -7582,7 +7582,8 @@ void inc_hw_errors(struct thr_info *thr)
 
     mutex_lock(&stats_lock);
     hw_errors++;
-    thr->cgpu->hw_errors++;
+    //thr->cgpu->hw_errors++;
+    thr->cgpu->hw_errors = hw_errors / 1000;
     mutex_unlock(&stats_lock);
 
     thr->cgpu->drv->hw_error(thr);
