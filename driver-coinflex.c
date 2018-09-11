@@ -76,12 +76,6 @@
 #define TEMP_UPDATE_INT_MS  10000
 #define CHECK_DISABLE_TIME  0
 
-#define DIFF_DEF		(1)
-#define DIFF_1HR		(4)
-#define DIFF_4HR		(32)
-#define DIFF_RUN		(64)
-
-
 static int ret_pll[ASIC_CHAIN_NUM] = {0};
 extern Miner_Device_e eMinerDevice;
 static int nCoresNum = 6;
@@ -97,24 +91,18 @@ static uint8_t A1Pll4=A5_PLL_CLOCK_400MHz;
 static uint8_t A1Pll5=A5_PLL_CLOCK_400MHz;
 static uint8_t A1Pll6=A5_PLL_CLOCK_400MHz;
 
-static uint32_t show_log[ASIC_CHAIN_NUM];
 static uint32_t update_temp[ASIC_CHAIN_NUM];
 static uint32_t check_disbale_flag[ASIC_CHAIN_NUM];
-static int nChipsNum = 57;
 
 
 #define STD_V          0.84
 
 int spi_plug_status[ASIC_CHAIN_NUM] = {0};
 
-char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
-char volShowLog[ASIC_CHAIN_NUM][256] = {0};
-
 hardware_version_e g_hwver;
 //inno_type_e g_type;
 int g_reset_delay = 0xffff;
 int g_miner_state = 0;
-int chain_flag[ASIC_CHAIN_NUM] = {0};
 inno_reg_ctrl_t s_reg_ctrl;
 
 #define MAX_CMD_FAILS		(0)
@@ -129,8 +117,6 @@ struct A1_config_options A1_config_options = {
 
 /* override values with --bitmine-a1-options ref:sys:spi: - use 0 for default */
 static struct A1_config_options *parsed_config_options;
-void inno_log_record(int cid, void* log, int len);
-
 //static void coinflex_print_hw_error(char *drv_name, int device_id, struct work *work, uint32_t nonce);
 //static bool coinflex_set_algorithm(struct cgpu_info *coinflex);
 
@@ -190,8 +176,6 @@ static bool coinflex_queue_full(struct cgpu_info *cgpu)
     return queue_full;
 }
 
-int chain_encore_flag[ASIC_CHAIN_NUM] = {0};
-
 void *chain_detect_thread(void *argv)
 {
 	int i, cid;
@@ -204,7 +188,6 @@ void *chain_detect_thread(void *argv)
 	}
 
 	struct A1_chain *a1 = malloc(sizeof(*a1));
-	//assert(a1 != NULL);
 	if(a1 == NULL){
         applog(LOG_ERR,"a1 malloc failed at chain_detect_thread function!\n");
     }
@@ -222,13 +205,12 @@ void *chain_detect_thread(void *argv)
 	}
 
     //bistmask
-	if (!mcompat_chain_init(cid, SPI_SPEED_RUN, true)) {
+	if (!mcompat_chain_init(cid, SPI_SPEED_RUN, false)) {
 		goto failure;
 	}
 
 	a1->num_active_chips = a1->num_chips;
 	a1->chips = calloc(a1->num_active_chips, sizeof(struct A1_chip));
-    //assert (a1->chips != NULL);
     if (a1->chips == NULL){
         applog(LOG_ERR,"a1->chips malloc failed at chain_detect_thread function!\n");
     }
@@ -290,7 +272,6 @@ static bool A5_chain_detect()
             continue;
 
         struct cgpu_info *cgpu = malloc(sizeof(*cgpu));
-        //assert(cgpu != NULL);
         if (cgpu == NULL){
             applog(LOG_ERR,"cgpu malloc failed at A5_chain_detect function!\n");
         }
@@ -450,91 +431,11 @@ static void coinflex_flush_work(struct cgpu_info *coinflex)
     mutex_unlock(&a1->lock);
 }
 
-
-#define VOLTAGE_UPDATE_INT  6000
-#define  LOG_FILE_PREFIX "/tmp/log/analys"
-#define  LOG_VOL_PREFIX "/tmp/log/volAnalys"
-
-
-const char cLevelError1[3] = "!";
-const char cLevelError2[3] = "#";
-const char cLevelError3[3] = "$";
-const char cLevelError4[3] = "%";
-const char cLevelError5[3] = "*";
-const char cLevelNormal[3] = "+";
-
-void Inno_Log_Save(struct A1_chip *chip,int nChip,int nChain)
-{
-    char szInNormal[8] = {0};
-    memset(szInNormal,0, sizeof(szInNormal));
-    if(chip->hw_errors > 0){
-        strcat(szInNormal,cLevelError1);
-    }
-    if(chip->stales > 0){
-        strcat(szInNormal,cLevelError2);
-    }
-    if((chip->temp > 564) || (chip->temp < 445)){
-        strcat(szInNormal,cLevelError3);
-    }
-    if(chip->num_cores < nCoresNum){
-        strcat(szInNormal,cLevelError4);
-    }
-    if((chip->nVol > 580) || (chip->nVol < 450)){
-        strcat(szInNormal,cLevelError5);
-    }
-
-    if((chip->hw_errors == 0) && (chip->stales == 0) && ((chip->temp < 564) && (chip->temp > 445)) &&((chip->nVol < 550) && (chip->nVol > 450)) && (chip->num_cores == 8)){
-        strcat(szInNormal,cLevelNormal);
-    }
-
-    sprintf(szShowLog[nChain][nChip], "\n%-8s|%32d|%8d|%8d|%8d|%8d|%8d|%8d|%8d",szInNormal,chip->nonces_found,
-            chip->hw_errors, chip->stales,chip->temp,chip->nVol,chip->num_cores,nChip,nChain);
-}
-
-void inno_log_print(int cid, void* log, int len)
-{
-    FILE* fd;
-    char fileName[128] = {0};
-
-    sprintf(fileName, "%s%d.log", LOG_FILE_PREFIX, cid);
-    
-    fd = fopen(fileName, "w+"); 
-    
-    if(fd == NULL){
-        applog(LOG_ERR, "Open log File%d Failed!%s", cid, strerror(errno));
-        return; 
-    }
-
-    fwrite(log, len, 1, fd);
-    fflush(fd);
-    fclose(fd);
-}
-
-void inno_log_record(int cid, void* log, int len)
-{
-    FILE* fd;
-    char fileName[128] = {0};
-
-    sprintf(fileName, "%s%d.log", LOG_VOL_PREFIX, cid);
-    fd = fopen(fileName, "w+"); 
-    if(fd == NULL){             
-        applog(LOG_ERR, "Open log File%d Failed!%s", cid, strerror(errno));
-        return; 
-    }
-
-    fwrite(log, len, 1, fd);
-    fflush(fd);
-    fclose(fd);
-}
-
-volatile int g_nonce_read_err = 0;
-
 #define VAL_TO_TEMP(x)  ((double)((594 - x)* 5) / 7.5)
 #define INC_PLL_TEMP	95	
 #define DEC_PLL_TEMP	105
 #define HIGH_PLL		1200
 #define LOW_PLL			1100
-
 
 static void overheated_blinking(int cid)
 {
@@ -574,31 +475,14 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
 
     if (a1->last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
     {
-        show_log[cid]++;
         check_disbale_flag[cid]++;
 
         cgpu->chip_num = a1->num_active_chips;
         cgpu->core_num = a1->num_cores;
-
-       inno_log_print(cid, szShowLog[cid], sizeof(szShowLog[0]));
-
         a1->last_temp_time = get_current_ms();
     }
     
     cgtime(&now);
-    #if 0
-    if (cgpu->drv->max_diff < DIFF_RUN) {
-		int hours;
-
-		hours = tdiff(&now, &cgpu->dev_start_tv) / 3600;
-		if (hours > 3)
-			cgpu->drv->max_diff = DIFF_RUN;
-		else if (hours > 2 && cgpu->drv->max_diff < DIFF_4HR)
-			cgpu->drv->max_diff = DIFF_4HR;
-		else if (hours > 1 && cgpu->drv->max_diff < DIFF_1HR)
-			cgpu->drv->max_diff = DIFF_1HR;
-	}
-    #endif
 
     /* poll queued results */
     while (true){
@@ -628,7 +512,6 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
         if (!submit_nonce(thr, work, nonce)){
             applog(LOG_WARNING, "%d: chip %d: invalid nonce 0x%08x", cid, chip_id, nonce);
             chip->hw_errors++;
-            /* add a penalty of a full nonce range on HW errors */
             nonce_ranges_processed--;
             continue;
         }
@@ -688,8 +571,6 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
                         usleep(500);
                         continue;
                     }
-                    //assert(work != NULL);
-
                     if (set_work(a1, c, work, 0))
                     {
                         nonce_ranges_processed++;
@@ -713,7 +594,7 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
 						 * restart */
 						for (i = 0; i < ASIC_CHAIN_NUM; ++i)
 							mcompat_chain_power_down(cid);
-						exit(1);
+						quit(1,"quit....");
 					}
 				}
 			}

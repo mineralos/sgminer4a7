@@ -22,10 +22,6 @@ extern struct A1_chain *chain[ASIC_CHAIN_NUM];
 
 extern inno_reg_ctrl_t s_reg_ctrl;
 
-int nReadVolTimes = 0;
-int nVolTotal = 0;
-
-
 
 #ifdef USE_D1578_PLL
 const int g_pll_list[PLL_LV_NUM] ={
@@ -1329,10 +1325,10 @@ bool abort_work(struct A1_chain *a1)
 
 bool check_chip(struct A1_chain *a1, int cid)
 {
-    uint8_t buffer[REG_LENGTH] = {0};
+    uint8_t buffer[REG_LENGTH_SG] = {0};
     int chip_id = cid + 1;
 
-    if (!mcompat_cmd_read_register(a1->chain_id, chip_id, buffer, REG_LENGTH)) {
+    if (!mcompat_cmd_read_register(a1->chain_id, chip_id, buffer, REG_LENGTH_SG)) {
         applog(LOG_NOTICE, "%d: Failed to read register for ""chip %d -> disabling", a1->chain_id, chip_id);
         a1->chips[cid].num_cores = 0;
         a1->chips[cid].disabled = 1;
@@ -1342,7 +1338,7 @@ bool check_chip(struct A1_chain *a1, int cid)
     a1->chips[cid].num_cores = buffer[11];
     a1->num_cores += a1->chips[cid].num_cores;
 
-    memcpy(a1->chips[cid].reg, buffer, REG_LENGTH);
+    memcpy(a1->chips[cid].reg, buffer, REG_LENGTH_SG);
     a1->chips[cid].nVol = mcompat_volt_to_mV(0x3ff & ((buffer[7] << 8) | buffer[8]));
 
     if (a1->chips[cid].num_cores < BROKEN_CHIP_THRESHOLD){

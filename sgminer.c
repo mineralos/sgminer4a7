@@ -7594,57 +7594,23 @@ static void rebuild_nonce(struct work *work, uint32_t nonce)
     uint32_t *work_nonce = (uint32_t *)(work->data + 64 + 12);
 
     *work_nonce = htole32(nonce);
-
-#if defined(USE_LTCTECH) || defined(USE_COINFLEX)
-    switch (kernel)
-    {
-        case KL_SCRYPT:
-            scrypt_regenhash(work);
-            break;
-        case KL_X11MOD:
-            darkcoin_regenhash(work);
-            break;
-        case KL_X13MOD:
-            marucoin_regenhash(work);
-            break;
-        case KL_X15MOD:
-            break;
-        default:
-            regen_hash(work);
-            break;
-    }
-#else
-    regen_hash(work);
-#endif
+    darkcoin_regenhash(work);
 }
 
 /* For testing a nonce against diff 1 */
 bool test_nonce(struct work *work, uint32_t nonce)
 {
+#if 0
     uint32_t *hash_32 = (uint32_t *)(work->hash + 28);
-
-#if defined(USE_LTCTECH) || defined(USE_COINFLEX)
-    uint32_t diff1targ;
+    uint32_t diff1targ = 0x000000ffUL;
 
     rebuild_nonce(work, nonce);
-    switch(kernel)
-    {
-        case KL_SCRYPT:
-        case KL_X11MOD:
-        case KL_X13MOD:
-        case KL_X15MOD:
-        default:
-            diff1targ = 0x000000ffUL;
-            //diff1targ = 0x0000003fUL;
-            break;
-    }
-//  if(le32toh(*hash_32) <= diff1targ)
- //   printf("hash:0x%08x,0x%08x\n",le32toh(*hash_32),*hash_32);
-    
+    //applog(LOG_ERR,"diff1targ 0x%08x,nonce:0x%08x,hash 0x%08x",diff1targ, nonce,le32toh(*hash_32));
     return (le32toh(*hash_32) <= diff1targ);
 #else
+    uint32_t *hash_16 = (uint32_t *)(work->hash + 30);
     rebuild_nonce(work, nonce);
-    return (*hash_32 == 0);
+    return (*hash_16 == 0);
 #endif
 }
 
@@ -7731,18 +7697,29 @@ bool submit_tested_work(struct thr_info *thr, struct work *work)
     return true;
 }
 
+static bool new_nonce(struct thr_info *thr, uint32_t nonce)
+{
+    struct cgpu_info *cgpu = thr->cgpu;
+
+    if (unlikely(cgpu->last_nonce == nonce))
+    {
+        applog(LOG_INFO, "%s %d duplicate share detected as HW error",cgpu->drv->name, cgpu->device_id);
+        return false;
+    }
+    cgpu->last_nonce = nonce;
+    return true;
+}
+
+
 /* Returns true if nonce for work was a valid share */
 bool submit_nonce(struct thr_info *thr, struct work *work, uint32_t nonce)
 {
-    if (test_nonce(work, nonce)){
+    if (new_nonce(thr, nonce) && test_nonce(work, nonce)){
         submit_tested_work(thr, work);
     }else{
         inc_hw_errors(thr);
         return false;
     }
-
-    if(opt_benchfile && opt_benchfile_display)
-        benchfile_dspwork(work, nonce);
 
     return true;
 }
