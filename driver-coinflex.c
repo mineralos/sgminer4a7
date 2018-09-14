@@ -348,11 +348,9 @@ static void coinflex_detect(bool __maybe_unused hotplug)
         usleep(500000);
     }
 
-    //if(detect_A1_chain()){
-        //return ;
-    //}
-
     A5_chain_detect();
+
+    mcompat_get_miner_status();
     
     applog(LOG_WARNING, "A5 Chain dectect finish!\n");
 }

@@ -7693,6 +7693,7 @@ bool submit_tested_work(struct thr_info *thr, struct work *work)
         applog(LOG_INFO, "%s %d: Share above target", thr->cgpu->drv->name, thr->cgpu->device_id);
         return false;
     }
+
     work_out = copy_work(work);
     submit_work_async(work_out);
     return true;
@@ -9759,6 +9760,8 @@ int main(int argc, char *argv[])
     unsigned int k;
     char *s;
 
+    mcompat_mount_fs();
+
     /* This dangerous functions tramples random dynamically allocated
      * variables so do it before anything at all */
     if (unlikely(curl_global_init(CURL_GLOBAL_ALL))){
@@ -10043,6 +10046,7 @@ int main(int argc, char *argv[])
 #endif
     };
 
+    #if 0
     if (-1 != get_nand_access())
     {
         mcompat_record_params(); 
@@ -10051,7 +10055,7 @@ int main(int argc, char *argv[])
     {
         applog(LOG_ERR,"Failed to get nand access.");
     }
-
+    #endif
 
     /* Use the DRIVER_PARSE_COMMANDS macro to fill all the device_drvs */
     DRIVER_PARSE_COMMANDS(DRIVER_FILL_DEVICE_DRV)
