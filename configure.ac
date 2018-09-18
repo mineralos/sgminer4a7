@@ -232,6 +232,18 @@ if test "x$d1578_pll_config" = xyes; then
        AC_DEFINE([USE_D1578_PLL], [1], [Defined to 1 if D1578 chip used])
 fi
 
+#t1578 chip num
+t1578_chip_num="no"
+
+AC_ARG_WITH([t1578_chip_num],
+       [AC_HELP_STRING([--use-t1578_chip_num],[Compile support for T1578 chip num])],
+       [t1578_chip_num=$enableval]
+       )
+
+if test "x$t1578_chip_num" = xyes; then
+       AC_DEFINE([USE_T1578_GHIP_NUM], [1], [Defined to 1 if t1578 chip num used])
+fi
+
 djansson="yes"
 case $target in
 	*-*-freebsd*)

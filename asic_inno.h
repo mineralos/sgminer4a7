@@ -21,6 +21,11 @@
 #define PLL_LV_NUM				(359)
 #define ASIC_CHIP_NUM           (57)
 #define ASIC_CORE_NUM           (6)
+#elif (USE_T1578_GHIP_NUM == 1)
+#define CHIP_VID_RUN            (10)
+#define PLL_LV_NUM				(119)
+#define ASIC_CHIP_NUM           (57)
+#define ASIC_CORE_NUM           (8)
 #else
 #define CHIP_VID_RUN            (10)
 #define PLL_LV_NUM				(119)
