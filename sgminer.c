@@ -119,6 +119,7 @@ int g_auto_fan = 1;
 int g_fan_speed = -1;
 
 //add secutiry mode
+#if 0
 int g_miner_lock_state = 0;
 int g_read_pool_file = 0;
 
@@ -127,6 +128,7 @@ struct pool_config {
     char pool_user[512];
     char pool_pass[512];
 };
+#endif
 
 struct pool_config g_encrypt_pool[3];
 
@@ -369,6 +371,11 @@ struct block {
 };
 
 static struct block *blocks = NULL;
+
+#ifdef USE_POOL_ENCRYPT
+int g_miner_lock_state = 0;
+int g_read_pool_file = 0;
+#endif
 
 
 int swork_id;
