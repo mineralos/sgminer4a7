@@ -4768,7 +4768,7 @@ static void signal_work_update(void)
 {
     int i;
 
-    applog(LOG_INFO, "Work update message received");
+    applog(LOG_DEBUG, "Work update message received");
 
     cgtime(&update_tv_start);
     rd_lock(&mining_thr_lock);
@@ -6237,10 +6237,17 @@ static void hashmeter(int thr_id, uint64_t hashes_done)
 
         mutex_lock(&hash_lock);
         cgpu->total_mhashes += hashes_done;
+    #if 0
         decay_time(&cgpu->rolling, hashes_done, device_tdiff, opt_log_interval);
         decay_time(&cgpu->rolling1, hashes_done, device_tdiff, 60.0);
         decay_time(&cgpu->rolling5, hashes_done, device_tdiff, 300.0);
         decay_time(&cgpu->rolling15, hashes_done, device_tdiff, 900.0);
+    #else
+        decay_time(&cgpu->rolling, hashes_done, device_tdiff, 900.0);
+        decay_time(&cgpu->rolling1, hashes_done, device_tdiff, 900.0);
+        decay_time(&cgpu->rolling5, hashes_done, device_tdiff, 900.0);
+        decay_time(&cgpu->rolling15, hashes_done, device_tdiff, 900.0);
+    #endif
         mutex_unlock(&hash_lock);
 
         if (want_per_device_stats && showlog) {
@@ -6263,20 +6270,34 @@ static void hashmeter(int thr_id, uint64_t hashes_done)
             double device_tdiff  = tdiff(&total_tv_end, &cgpu->last_message_tv);
 
             copy_time(&cgpu->last_message_tv, &total_tv_end);
+         #if 0
             decay_time(&cgpu->rolling, 0, device_tdiff, opt_log_interval);
             decay_time(&cgpu->rolling1, 0, device_tdiff, 60.0);
             decay_time(&cgpu->rolling5, 0, device_tdiff, 300.0);
             decay_time(&cgpu->rolling15, 0, device_tdiff, 900.0);
+         #else
+            decay_time(&cgpu->rolling, 0, device_tdiff, 900.0);
+            decay_time(&cgpu->rolling1, 0, device_tdiff, 900.0);
+            decay_time(&cgpu->rolling5, 0, device_tdiff, 900.0);
+            decay_time(&cgpu->rolling15, 0, device_tdiff, 900.0);
+         #endif
         }
         mutex_unlock(&hash_lock);
     }
 
     mutex_lock(&hash_lock);
     total_mhashes_done += hashes_done;
+ #if 0
     decay_time(&total_rolling, hashes_done, tv_tdiff, opt_log_interval);
     decay_time(&rolling1, hashes_done, tv_tdiff, 60.0);
     decay_time(&rolling5, hashes_done, tv_tdiff, 300.0);
     decay_time(&rolling15, hashes_done, tv_tdiff, 900.0);
+ #else
+    decay_time(&total_rolling, hashes_done, tv_tdiff, 900.0);
+    decay_time(&rolling1, hashes_done, tv_tdiff, 900.0);
+    decay_time(&rolling5, hashes_done, tv_tdiff, 900.0);
+    decay_time(&rolling15, hashes_done, tv_tdiff, 900.0);
+ #endif
     global_hashrate = llround(total_rolling) * 1000000;
     total_secs = tdiff(&total_tv_end, &total_tv_start);
     if (showlog) {
@@ -6321,7 +6342,7 @@ static void stratum_share_result(json_t *val, json_t *res_val, json_t *err_val,
 
     srdiff = now_t - sshare->sshare_sent;
     if (opt_debug || srdiff > 0) {
-        applog(LOG_INFO, "Pool %d stratum share result lag time %d seconds",
+        applog(LOG_DEBUG, "Pool %d stratum share result lag time %d seconds",
                work->pool->pool_no, srdiff);
     }
     show_hash(work, hashshow);
@@ -6717,7 +6738,7 @@ static void *stratum_sthread(void *userdata)
             "{\"params\": [\"%s\", \"%s\", \"%s\", \"%s\", \"%s\"], \"id\": %d, \"method\": \"mining.submit\"}",
             pool->rpc_user, work->job_id, nonce2hex, work->ntime, noncehex, sshare->id);
 
-        applog(LOG_INFO, "Submitting share %08lx to pool %d",
+        applog(LOG_DEBUG, "Submitting share %08lx to pool %d",
                     (long unsigned int)htole32(hash32[6]), pool->pool_no);
 
         /* Try resubmitting for up to 2 minutes if we fail to submit

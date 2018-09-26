@@ -550,53 +550,53 @@ static int64_t coinflex_scanwork(struct thr_info *thr)
     }
     else
     {
-        hub_spi_clean_chain(cid);
-        if( mcompat_cmd_read_register(a1->chain_id, 10, reg,REG_LENGTH_SG) ||  mcompat_cmd_read_register(a1->chain_id, 11, reg,REG_LENGTH_SG) ||  mcompat_cmd_read_register(a1, 12, reg,REG_LENGTH_SG))
-        {
-            uint8_t qstate = reg[9] & 0x01;
+		for (i = a1->num_active_chips; i > 0; i--)
+		{
+			if(mcompat_cmd_read_register(a1->chain_id, i, reg, REG_LENGTH_SG))
+			{
+				struct A1_chip *chip = NULL;
+				struct work *work = NULL;
+				// hexdump_error("Read reg",reg,REG_LENGTH);
+				uint8_t qstate = reg[9] & 0x03;
 
-            if (qstate != 0x01)
-            {
-                work_updated = true;
-                for (i = a1->num_active_chips; i > 0; i--) 
-                {
-                    uint8_t c=i;
-                    struct A1_chip *chip = &a1->chips[i - 1];
-                    struct work *work = wq_dequeue(&a1->active_wq);
-                    if(work == NULL)
-                    {
-                        applog(LOG_ERR, "Wait work queue...");
-                        usleep(500);
-                        continue;
-                    }
-                    if (set_work(a1, c, work, 0))
-                    {
-                        nonce_ranges_processed++;
-                        chip->nonce_ranges_done++;
-                    }                 
-                }
-            } 
-        }
-        else
-        {
-				g_cmd_fails[cid]++;
-				if (g_cmd_fails[cid] > MAX_CMD_FAILS) {
-					applog(LOG_ERR, "Chain %d reset spihub", cid);
-					// TODO: replaced with mcompat_spi_reset()
-					hub_spi_clean_chain(cid);
-					g_cmd_resets[cid]++;
-					if (g_cmd_resets[cid] > MAX_CMD_RESETS) {
-						applog(LOG_ERR, "Chain %d is not working due to multiple resets. shutdown.",
-						       cid);
-						/* Exit cgminer, allowing systemd watchdog to
-						 * restart */
-						for (i = 0; i < ASIC_CHAIN_NUM; ++i)
-							mcompat_chain_power_down(cid);
-						quit(1,"quit....");
+				if (qstate != 0x03)
+				{
+					work_updated = true;
+					if(qstate == 0x0){
+						chip = &a1->chips[i - 1];
+						work = wq_dequeue(&a1->active_wq);
+
+						if (work == NULL){
+							printf("Sorry work is NULL\n");
+							continue;
+						}
+
+						if (set_work(a1, i, work, 0))
+						{
+							nonce_ranges_processed++;
+							chip->nonce_ranges_done++;
+						}
+					}
+
+					chip = &a1->chips[i - 1];
+					work = wq_dequeue(&a1->active_wq);
+
+					if (work == NULL){
+						printf("Sorry work is NULL\n");
+						continue;
+					}
+
+					if (set_work(a1, i, work, 0))
+					{
+						nonce_ranges_processed++;
+						chip->nonce_ranges_done++;
 					}
 				}
 			}
-    }
+			hub_spi_clean_chain(a1->chain_id);
+			//mcompat_cmd_clean_spi_hub(a1->chain_id);
+		}
+	}
 
 	/* Temperature control */
 	int chain_temp_status = mcompat_tempctrl_update_chain_temp(cid);
@@ -767,5 +767,5 @@ struct device_drv coinflex_drv =
     .update_work            = NULL,
     .flush_work             = coinflex_flush_work,          // new block detected or work restart 
     .scanwork               = coinflex_scanwork,                // scan hash
-    .max_diff               = 1//65536
+    .max_diff               = 65536
 };
